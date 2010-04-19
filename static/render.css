@@ -1,0 +1,229 @@
+html {
+  overflow-y: scroll;
+}
+
+a img {
+ border: 0;
+}
+
+body {
+  color: black;
+  background-color: white;
+  font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
+  margin: 0px;
+  padding: 0px;
+}
+
+table.applicants {
+    margin-top: 1em;
+    width: 100%;
+    border: 1px solid black;
+    font-size: 100%;
+    }
+    
+table.applicants > thead {    
+    background-color: rgb(90%,90%,90%);
+}
+
+table.applicants > tbody > tr {
+    cursor: pointer;
+}
+table.applicants > tbody > tr:nth-child(2n) {
+    background-color: white;
+}
+table.applicants > tbody > tr:nth-child(2n) {
+    background: #F5F5DC;
+}
+table.applicants > tbody > tr:hover {
+    background-color: #FFCC66;
+}
+table.applicants > tbody > tr > td {
+    text-align: center;
+}
+table.applicants > tbody > tr > td:nth-last-child(2) {
+    text-align: left;
+}
+
+a.code {
+    font-size: 120%;
+    font-weight: bold;
+    }
+
+.low {
+    background: yellow;
+}
+.verylow {
+    background: red;
+}
+
+a.little {
+    float: right;
+    }
+a.little img {
+    width: 50%;
+    }
+    
+ul.horiz {
+    padding: 0;
+    }
+    
+ul.horiz li {
+    display: inline;
+    list-style-type: none;
+    padding-right: 1em;
+    }
+    
+/* PDFs */
+.pdfs {
+    width: 100%;
+    }
+    
+.pdfs td {
+    text-align: center;
+    }
+    
+/* Decisions */
+.dec-PhD {
+    font-family: monospace;
+    color: green;
+    }
+.dec-MS {
+    font-family: monospace;
+    color: blue;
+    }
+.dec-Provisional {
+    font-family: monospace;
+    color: orange;
+    }
+.dec-Reject {
+    font-family: monospace;
+    color: red;
+    }
+    
+/* Edit */
+    
+table.edit {
+    clear: both;
+    width: 100%;
+    }
+    
+table.edit td {
+    width: 32%;
+    text-align: center;
+    }
+    
+table.edit td textarea {
+    width: 100%;
+    }
+    
+/* Comments */
+p.comment .who {
+    font-weight: bold;
+    }
+    
+p.comment .decision {
+    background-color: #F5F5DC;
+    font-weight: bold;
+    }
+    
+p.comment .tag {
+    background-color: #F5F5DC;
+    font-weight: bold;
+    }
+    
+p.comment .time {
+    font-size: 90%;
+    padding-left: 1em;
+    }
+
+/* Data Table */
+table.data {
+    width: 100%;
+    margin-top: 1em;
+    }
+table.data td {
+    padding-right: 1em;
+    }
+table.data td.label {
+    background-color: #F5F5DC;
+    font-weight: bold;
+}
+    
+/* Tabbing */
+.tabbed .tab-header .tab-uheader {
+    margin: 0;
+    padding: 0 0 1em 0;
+}
+
+.tabbed .tab-header ul {
+    list-style: none;
+	padding:0;
+	margin:0;
+}
+
+.tabbed .tab-header ul li {
+    float: left;
+	border: 1px solid;
+	border-bottom-width: 0;
+	margin: 0 0.5em 0 0;
+}
+
+.tabbed .tab-header ul li.tab-selected {
+	position: relative;
+	top: 1px;
+	background: white;
+}
+
+.tabbed .tab-header ul li a {
+    text-decoration: none;
+}
+    
+.tabbed .tab-header ul li {
+    display: block;
+    text-align: center;
+    padding: 0 1em;
+}
+
+.tabbed .tab-content {
+    border: 1px solid;
+	clear: both;
+}
+
+.breadcrumb {
+  padding-left: 1em;
+  padding-right: 1em;
+  background: #FFCC66;
+  font-size: 120%;
+  font-weight: bold;
+}
+
+.breadcrumb a {
+    color: black;
+    text-decoration: none;
+    font-weight: normal;
+}
+
+.breadcrumb a:hover {
+    color: blue;
+    text-decoration: underline;
+}
+
+#logout {
+    float: right;
+}
+
+/* Old stuff */
+
+.content {
+  margin-left: auto;
+  margin-right: auto;
+  width: 95%;
+}
+
+#footer {
+    text-align: right;
+    width: 100%;
+    background: #F5F5DC;
+    margin-top: 2em;
+}
+    
