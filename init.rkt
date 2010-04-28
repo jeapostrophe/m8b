@@ -16,6 +16,8 @@
   (define v (string->number s))
   (or v
       bson-null))
+(define (string-empty? s)
+  (zero? (string-length s)))
 
 (define-runtime-path csv-path "examples.csv")
 (define-runtime-path example-pdf "example.pdf")
@@ -63,10 +65,18 @@
          #:gre-verbal-score (string->number* GRE_V)
          #:gre-date 
          (with-handlers ([exn:fail? (lambda (x) bson-null)])
-           (printf "~a~n" GREDate)
            (19:date->time-utc
             (19:string->date (string-append GREDate "-01") "~b-~y-~d")))
-         #:toefl bson-null ; XXX
+         #:toefl 
+         (if (ormap string-empty? (list TOEFL-Kind TOEFL-Date TOEFL-Read TOEFL-Listen TOEFL-Speaking TOEFL-Writing))
+             bson-null
+             (list (cons 'kind (string->symbol TOEFL-Kind))
+                   (cons 'date (19:date->time-utc
+                                (19:string->date (string-append TOEFL-Date "-01") "~b-~y-~d")))
+                   (cons 'read (string->number TOEFL-Read))
+                   (cons 'listen (string->number TOEFL-Listen))
+                   (cons 'speak (string->number TOEFL-Speaking))
+                   (cons 'write (string->number TOEFL-Writing))))
          
          #:pdf-application 
          (if (zero? (random 10))

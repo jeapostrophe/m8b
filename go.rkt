@@ -10,11 +10,7 @@
 (define (footer)
   `(div ([id "footer"])
         "Powered by " (a ([href "http://plt-scheme.org/"]) "PLT Scheme") ". "
-        "Written by " (a ([href "http://faculty.cs.byu.edu/~jay"]) "Jay McCarthy") ". "
-        (a ([href "/help"])
-           "Need help?")
-        (br)
-        "Current time: " ,(date->string (seconds->date (current-seconds)) #t)))
+        "Written by " (a ([href "http://faculty.cs.byu.edu/~jay"]) "Jay McCarthy") ". "))
 
 (define (template #:breadcrumb bc
                   . bodies)
@@ -145,10 +141,10 @@
    [(not (regexp-match #rx"BS-CS" (applicant-degree a)))
     (make-code "D" (applicant-degree a) #f)]
    [(null-time<? (applicant-gre-date a)
-                  (19:time-subtract
-                   (19:current-time 19:time-utc)
-                   (19:date->time-utc
-                    (19:make-date 0 0 0 0 0 12 0 0))))
+                 (19:time-subtract
+                  (19:current-time 19:time-utc)
+                  (19:date->time-utc
+                   (19:make-date 0 0 0 0 0 12 0 0))))
     (make-code "G" 
                (format "Old GRE scores: ~a"
                        (date->xexpr (applicant-gre-date a)))
@@ -513,18 +509,43 @@
         "Major GPA" `(span ,@(major-gpa->xexpr-forest a)))
        
        (list
-        "GRE Date" (date->xexpr (applicant-gre-date a))
-        "GRE Verbal" `(span ,@(gre-verbal->xexpr-forest a) nbsp
+        "GRE" (date->xexpr (applicant-gre-date a))
+        "Verbal" `(span ,@(gre-verbal->xexpr-forest a) nbsp
                             ,(maybe-add-parens (percentage->xexpr (applicant-gre-verbal-percentile a))))
-        "GRE Quantative" `(span ,@(gre-quant->xexpr-forest a) nbsp
+        "Quantative" `(span ,@(gre-quant->xexpr-forest a) nbsp
                                 ,(maybe-add-parens (percentage->xexpr (applicant-gre-quant-percentile a))))
-        "GRE Analytic" `(span ,@(gre-anal->xexpr-forest a) nbsp
+        "Analytic" `(span ,@(gre-anal->xexpr-forest a) nbsp
                               ,(maybe-add-parens (percentage->xexpr (applicant-gre-analytic-percentile a)))))
        
        (if (bson-null? (applicant-toefl a))
            #f
-           (list
-            "TOEFL" "XXX"))
+           (local [(define toefl (applicant-toefl a))
+                   (define kind (hash-ref toefl 'kind))]
+             (list*
+              "TOEFL" (date->xexpr (hash-ref toefl 'date))
+              (match kind
+                ['IBT
+                 (define read (hash-ref toefl 'read))
+                 (define write (hash-ref toefl 'write))
+                 (define listen (hash-ref toefl 'listen))
+                 (define speak (hash-ref toefl 'speak))
+                 (define total (+ read write listen speak))
+                 (list "Total" (number->string total)
+                       "Reading" (number->string read)
+                       "Listening" (number->string listen)
+                       "Speaking" (number->string speak)
+                       "Writing" (number->string write))]
+                ['PBT
+                 (define listen (hash-ref toefl 'listen))
+                 (define structure (hash-ref toefl 'structure))
+                 (define reading (hash-ref toefl 'reading))
+                 (define writing (hash-ref toefl 'writing))
+                 (define total (+ listen structure reading))
+                 (list "Total" (number->string total)
+                       "Listening" (number->string listen)
+                       "Structure" (number->string structure)
+                       "Reading" (number->string reading)
+                       "Writing" (number->string writing))]))))
        
        (local [(define tags (applicant-tags a))]
          (if (zero? (vector-length tags))
@@ -608,7 +629,6 @@
   (dispatch-rules+applies
    [("") show-root]
    [("logout") logout]
-   ; XXX help page
    [("new") new-app]
    [("next") next-app]
    [("app" (mongo-dict-arg "applicants")) edit-app]
