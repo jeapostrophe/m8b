@@ -164,12 +164,6 @@
     (hash-update! vote->who vote (curry list* who) empty))
   vote->who)
 
-; XXX full featured
-(define applicant-formlet
-  (formlet
-   (span "Name:" ,{input-string . => . name})
-   name))
-
 (define (boolean->xexpr b)
   (if b "Y" "N"))
 (define (number->xexpr n)
@@ -336,14 +330,76 @@
   (for/or ([a (applicants-tagged-for (current-user) #:decided? #f)])
     a))
 
+(require web-server/formlets/lib)
+(define (new-app req)
+  ; XXX have this make sense
+  (define name (formlet-process applicant-formlet req))
+  (make-applicant name)
+  ; XXX
+  (redirect-to (top-url show-root)))
+
+(define required-string input-string)
+; XXX
+(define optional-string input-string)
+; XXX
+(define optional-boolean
+  (cross (pure (λ (x) 
+                 (if (binding:form? x)
+                     (bytes=? #"on" (binding:form-value x))
+                     bson-null)))
+         (checkbox #"" #f)))
+; XXX
+(define optional-date required-string)
+; XXX
+(define (optional-number-in-range min max)
+  input-int)
+; XXX
+(define (optional-from . opts)
+  (select-input opts #:display symbol->string))
+; XXX
+(define (optional-file suffix)
+  input-string)
+
+; XXX Use this to edit as well.
+(define applicant-formlet
+  (formlet
+   (#%#
+    ,{required-string . => . first-name}
+    ,{required-string . => . last-name}
+    ,{optional-string . => . citizenship}
+    ,{optional-boolean . => . lds?}
+    ,{optional-boolean . => . financial-aid?}
+    ,{optional-date . => . gre-date}
+    ,{(optional-number-in-range 0 800) . => . gre-verbal-score}
+    ,{(optional-number-in-range 0 99) . => . gre-verbal-percentile}
+    ,{(optional-number-in-range 0 800) . => . gre-quant-score}
+    ,{(optional-number-in-range 0 99) . => . gre-quant-percentile}
+    ,{(optional-number-in-range 0 6) . => . gre-analytic-score}
+    ,{(optional-number-in-range 0 99) . => . gre-analytic-percentile}
+    ,{optional-string . => . prior-school}
+    ,{(optional-number-in-range 0 4) . => . cumulative-gpa}
+    ,{(optional-number-in-range 0 4) . => . major-gpa}
+    ,{optional-string . => . degree}
+    ,{(optional-from 'PhD 'MS) . => . degree-sought}
+    ; XXX TOEFL
+    ,{(optional-file ".pdf") . => . pdf-application}
+    ,{(optional-file ".pdf") . => . pdf-letters}
+    ,{(optional-file ".pdf") . => . pdf-transcript}
+    )
+   first-name))
+
 (define (render-admin)
   (template
    #:breadcrumb (list (cons "Applicants (admin)" #f))
-   (render-applicant-table (applicants))
-   `(div ([id "add"])
-         (h1 "Add an applicant")
-         (form ([action ,(top-url new-app)] [method "post"])
-               ,@(formlet-display applicant-formlet)))))
+   (tabs 
+    ""
+    "New Applicant"
+    `(div ([id "add"])
+          (form ([action ,(top-url new-app)] [method "post"])
+                ,@(formlet-display applicant-formlet)))
+    "All Applicants"
+    ; XXX Have edit rather than view links
+    (render-applicant-table (applicants)))))
 
 ; Controller 
 (require scheme/runtime-path
@@ -511,11 +567,11 @@
        (list
         "GRE" (date->xexpr (applicant-gre-date a))
         "Verbal" `(span ,@(gre-verbal->xexpr-forest a) nbsp
-                            ,(maybe-add-parens (percentage->xexpr (applicant-gre-verbal-percentile a))))
+                        ,(maybe-add-parens (percentage->xexpr (applicant-gre-verbal-percentile a))))
         "Quantative" `(span ,@(gre-quant->xexpr-forest a) nbsp
-                                ,(maybe-add-parens (percentage->xexpr (applicant-gre-quant-percentile a))))
+                            ,(maybe-add-parens (percentage->xexpr (applicant-gre-quant-percentile a))))
         "Analytic" `(span ,@(gre-anal->xexpr-forest a) nbsp
-                              ,(maybe-add-parens (percentage->xexpr (applicant-gre-analytic-percentile a)))))
+                          ,(maybe-add-parens (percentage->xexpr (applicant-gre-analytic-percentile a)))))
        
        (if (bson-null? (applicant-toefl a))
            #f
@@ -605,13 +661,6 @@
                    `(p ([class "comment"])
                        (span ([class "who"]) ,who) " made the decision " (span ([class "decision"]) ,(symbol->string decision)) "." (br)
                        ,what ,(time->xexpr when))])))))))
-
-(define (new-app req)
-  ; XXX have this make sense
-  (define name (formlet-process applicant-formlet req))
-  (make-applicant name)
-  ; XXX
-  (redirect-to (top-url show-root)))
 
 (define (logout req)
   (redirect-to 
