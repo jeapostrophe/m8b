@@ -148,6 +148,17 @@ table.data td.label {
     background-color: #F5F5DC;
     font-weight: bold;
 }
+
+/* App form */
+table.appform {
+    margin-left: auto;
+    margin-right: auto;
+    }
+
+table.appform th {
+    background-color: #F5F5DC;
+    font-weight: bold;
+}
     
 /* Tabbing */
 .tabbed .tab-header .tab-uheader {

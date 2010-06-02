@@ -334,7 +334,6 @@
 (define (new-app req)
   ; XXX have this make sense
   (define name (formlet-process applicant-formlet req))
-  (make-applicant name)
   ; XXX
   (redirect-to (top-url show-root)))
 
@@ -357,35 +356,59 @@
 (define (optional-from . opts)
   (select-input opts #:display symbol->string))
 ; XXX
-(define (optional-file suffix)
-  input-string)
+(define (optional-file accepted)
+  (cross (pure (λ (x) 
+                 (if (binding:file? x)
+                     x
+                     bson-null)))
+         (make-input (λ (n) `(input ([type "file"] [name ,n] [accept ,accepted]))))))
 
 ; XXX Use this to edit as well.
 (define applicant-formlet
   (formlet
-   (#%#
-    ,{required-string . => . first-name}
-    ,{required-string . => . last-name}
-    ,{optional-string . => . citizenship}
-    ,{optional-boolean . => . lds?}
-    ,{optional-boolean . => . financial-aid?}
-    ,{optional-date . => . gre-date}
-    ,{(optional-number-in-range 0 800) . => . gre-verbal-score}
-    ,{(optional-number-in-range 0 99) . => . gre-verbal-percentile}
-    ,{(optional-number-in-range 0 800) . => . gre-quant-score}
-    ,{(optional-number-in-range 0 99) . => . gre-quant-percentile}
-    ,{(optional-number-in-range 0 6) . => . gre-analytic-score}
-    ,{(optional-number-in-range 0 99) . => . gre-analytic-percentile}
-    ,{optional-string . => . prior-school}
-    ,{(optional-number-in-range 0 4) . => . cumulative-gpa}
-    ,{(optional-number-in-range 0 4) . => . major-gpa}
-    ,{optional-string . => . degree}
-    ,{(optional-from 'PhD 'MS) . => . degree-sought}
-    ; XXX TOEFL
-    ,{(optional-file ".pdf") . => . pdf-application}
-    ,{(optional-file ".pdf") . => . pdf-letters}
-    ,{(optional-file ".pdf") . => . pdf-transcript}
-    )
+   (table ([class "appform"])
+          (tr (th "First Name")
+              (td ,{required-string . => . first-name})
+              (th "Last Name")
+              (td ,{required-string . => . last-name}))
+          (tr (th "Prior School")
+              (td ,{optional-string . => . prior-school})
+              (th "Prior Degree")
+              (td ,{optional-string . => . degree}))
+          (tr (th "Cumulative GPA")
+              (td ,{(optional-number-in-range 0 4) . => . cumulative-gpa})
+              (th "Major GPA")
+              (td ,{(optional-number-in-range 0 4) . => . major-gpa}))
+          (tr (th ([colspan "3"]) "Is the student LDS?")
+              (td ,{optional-boolean . => . lds?}))
+          (tr (th ([colspan "3"]) "Does the student need financial aid?")
+              (td ,{optional-boolean . => . financial-aid?}))
+          (tr (th ([colspan "3"]) "What degree is the applicant seeking?")      
+              (td ,{(optional-from 'PhD 'MS) . => . degree-sought}))
+          (tr (th ([colspan "2"]) "Citizenship")
+              (td ([colspan "2"]) ,{optional-string . => . citizenship}))
+          
+          (tr (th ([colspan "2"]) "GRE Test Date")
+              (td ([colspan "2"]) ,{optional-date . => . gre-date}))
+          (tr (th "GRE Verbal")
+              (td ,{(optional-number-in-range 0 800) . => . gre-verbal-score})
+              (th "Percentile")
+              (td ,{(optional-number-in-range 0 99) . => . gre-verbal-percentile}))
+          (tr (th "GRE Quant")
+              (td ,{(optional-number-in-range 0 800) . => . gre-quant-score})
+              (th "Percentile")
+              (td ,{(optional-number-in-range 0 99) . => . gre-quant-percentile}))
+          (tr (th "GRE Analytic")
+              (td ,{(optional-number-in-range 0 6) . => . gre-analytic-score})
+              (th "Percentile")
+              (td ,{(optional-number-in-range 0 99) . => . gre-analytic-percentile}))
+          ; XXX TOEFL
+          (tr (th ([colspan "2"]) "Application")
+              (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-application}))
+          (tr (th ([colspan "2"]) "Reference Letters")
+              (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-letters}))
+          (tr (th ([colspan "2"]) "Transcript")
+              (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-transcript})))
    first-name))
 
 (define (render-admin)
