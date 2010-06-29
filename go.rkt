@@ -9,7 +9,7 @@
 ; View
 (define (footer)
   `(div ([id "footer"])
-        "Powered by " (a ([href "http://plt-scheme.org/"]) "PLT Scheme") ". "
+        "Powered by " (a ([href "http://racket-lang.org/"]) "Racket") ". "
         "Written by " (a ([href "http://faculty.cs.byu.edu/~jay"]) "Jay McCarthy") ". "))
 
 (define (template #:breadcrumb bc
@@ -258,14 +258,17 @@
          (cons 'major-gpa major-gpa->xexpr-forest)
          (cons 'codes (compose code-set->xexpr-forest applicant-codes)))))
 
-(define (render-applicant-table applicants-seq)
+(define (render-applicant-table applicants-seq #:editing? [editing? #f])
   (define rows
     (for/list ([a applicants-seq])
-      `(tr ([onclick ,(format "document.location = ~S" (top-url edit-app a))])
+      `(tr ([onclick ,(format "document.location = ~S" (top-url view-app a))])
            ,@(for/list ([id (in-list top-field-ids)])
                (define f (hash-ref field->applicant-field-xexpr id))
                `(td ,@(f a)))
-           (td nbsp (a ([href ,(top-url edit-app a)]) "View")))))
+           (td nbsp 
+               ,(if editing?
+                    `(a ([href ,(top-url edit-app a)]) "Edit")
+                    `(a ([href ,(top-url view-app a)]) "View"))))))
   (if (empty? rows)
       ""
       `(table ([class "applicants sortable"])
@@ -331,11 +334,6 @@
     a))
 
 (require web-server/formlets/lib)
-(define (new-app req)
-  ; XXX have this make sense
-  (define name (formlet-process applicant-formlet req))
-  ; XXX
-  (redirect-to (top-url show-root)))
 
 (define required-string input-string)
 ; XXX
@@ -363,66 +361,88 @@
                      bson-null)))
          (make-input (λ (n) `(input ([type "file"] [name ,n] [accept ,accepted]))))))
 
-; XXX Use this to edit as well.
-(define applicant-formlet
-  (formlet
-   (table ([class "appform"])
-          (tr (th "First Name")
-              (td ,{required-string . => . first-name})
-              (th "Last Name")
-              (td ,{required-string . => . last-name}))
-          (tr (th "Prior School")
-              (td ,{optional-string . => . prior-school})
-              (th "Prior Degree")
-              (td ,{optional-string . => . degree}))
-          (tr (th "Cumulative GPA")
-              (td ,{(optional-number-in-range 0 4) . => . cumulative-gpa})
-              (th "Major GPA")
-              (td ,{(optional-number-in-range 0 4) . => . major-gpa}))
-          (tr (th ([colspan "3"]) "Is the student LDS?")
-              (td ,{optional-boolean . => . lds?}))
-          (tr (th ([colspan "3"]) "Does the student need financial aid?")
-              (td ,{optional-boolean . => . financial-aid?}))
-          (tr (th ([colspan "3"]) "What degree is the applicant seeking?")      
-              (td ,{(optional-from 'PhD 'MS) . => . degree-sought}))
-          (tr (th ([colspan "2"]) "Citizenship")
-              (td ([colspan "2"]) ,{optional-string . => . citizenship}))
-          
-          (tr (th ([colspan "2"]) "GRE Test Date")
-              (td ([colspan "2"]) ,{optional-date . => . gre-date}))
-          (tr (th "GRE Verbal")
-              (td ,{(optional-number-in-range 0 800) . => . gre-verbal-score})
-              (th "Percentile")
-              (td ,{(optional-number-in-range 0 99) . => . gre-verbal-percentile}))
-          (tr (th "GRE Quant")
-              (td ,{(optional-number-in-range 0 800) . => . gre-quant-score})
-              (th "Percentile")
-              (td ,{(optional-number-in-range 0 99) . => . gre-quant-percentile}))
-          (tr (th "GRE Analytic")
-              (td ,{(optional-number-in-range 0 6) . => . gre-analytic-score})
-              (th "Percentile")
-              (td ,{(optional-number-in-range 0 99) . => . gre-analytic-percentile}))
-          ; XXX TOEFL
-          (tr (th ([colspan "2"]) "Application")
-              (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-application}))
-          (tr (th ([colspan "2"]) "Reference Letters")
-              (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-letters}))
-          (tr (th ([colspan "2"]) "Transcript")
-              (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-transcript})))
-   first-name))
+(define (edit-application-form embed/url a)
+  (define the-formlet
+    (formlet
+     (table ([class "appform"])
+            (tr (th "First Name")
+                (td ,{required-string . => . first-name})
+                (th "Last Name")
+                (td ,{required-string . => . last-name}))
+            (tr (th "Prior School")
+                (td ,{optional-string . => . prior-school})
+                (th "Prior Degree")
+                (td ,{optional-string . => . degree}))
+            (tr (th "Cumulative GPA")
+                (td ,{(optional-number-in-range 0 4) . => . cumulative-gpa})
+                (th "Major GPA")
+                (td ,{(optional-number-in-range 0 4) . => . major-gpa}))
+            (tr (th ([colspan "3"]) "Is the student LDS?")
+                (td ,{optional-boolean . => . lds?}))
+            (tr (th ([colspan "3"]) "Does the student need financial aid?")
+                (td ,{optional-boolean . => . financial-aid?}))
+            (tr (th ([colspan "3"]) "What degree is the applicant seeking?")      
+                (td ,{(optional-from 'PhD 'MS) . => . degree-sought}))
+            (tr (th ([colspan "2"]) "Citizenship")
+                (td ([colspan "2"]) ,{optional-string . => . citizenship}))
+            
+            (tr (th ([colspan "2"]) "GRE Test Date")
+                (td ([colspan "2"]) ,{optional-date . => . gre-date}))
+            (tr (th "GRE Verbal")
+                (td ,{(optional-number-in-range 0 800) . => . gre-verbal-score})
+                (th "Percentile")
+                (td ,{(optional-number-in-range 0 99) . => . gre-verbal-percentile}))
+            (tr (th "GRE Quant")
+                (td ,{(optional-number-in-range 0 800) . => . gre-quant-score})
+                (th "Percentile")
+                (td ,{(optional-number-in-range 0 99) . => . gre-quant-percentile}))
+            (tr (th "GRE Analytic")
+                (td ,{(optional-number-in-range 0 6) . => . gre-analytic-score})
+                (th "Percentile")
+                (td ,{(optional-number-in-range 0 99) . => . gre-analytic-percentile}))
+            ; XXX TOEFL
+            (tr (th ([colspan "2"]) "Application")
+                (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-application}))
+            (tr (th ([colspan "2"]) "Reference Letters")
+                (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-letters}))
+            (tr (th ([colspan "2"]) "Transcript")
+                (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-transcript}))
+            (tr (td ([colspan "4"]) nbsp))
+            (tr (td ([colspan "4"] [align "center"]) (input ([type "submit"])))))
+     first-name))
+  (define (submit-handler req)
+    (formlet-process the-formlet req)
+    "XXX")
+  
+  `(form ([action ,(embed/url submit-handler)] [method "post"])
+         ,@(formlet-display the-formlet)))
 
 (define (render-admin)
-  (template
-   #:breadcrumb (list (cons "Applicants (admin)" #f))
-   (tabs 
-    ""
-    "New Applicant"
-    `(div ([id "add"])
-          (form ([action ,(top-url new-app)] [method "post"])
-                ,@(formlet-display applicant-formlet)))
-    "All Applicants"
-    ; XXX Have edit rather than view links
-    (render-applicant-table (applicants)))))
+  (send/suspend/dispatch
+   (λ (embed/url)
+     (template
+      #:breadcrumb (list (cons "Applicants (admin)" #f))
+      (tabs 
+       ""
+       "New Applicant"
+       `(div ([id "add"])
+             ,(edit-application-form embed/url #f))
+       "All Applicants"
+       (render-applicant-table (applicants)
+                               #:editing? #t))))))
+
+(define (edit-app req a)
+  (define name
+    (format "~a ~a"
+            (applicant-first-name a)
+            (applicant-last-name a)))
+  (send/suspend/dispatch
+   (lambda (embed/url)
+     (template
+      #:breadcrumb
+      (list (cons "Applicants" (top-url show-root))
+            (cons name #f))
+      (edit-application-form embed/url a)))))
 
 ; Controller 
 (require scheme/runtime-path
@@ -478,7 +498,7 @@
    empty
    (list (file-bytes file))))
 
-(define (edit-app req a)
+(define (view-app req a)
   (define original-tags (applicant-tags a))
   (define (applicant-tagged-with? f)
     (define n (faculty-name f))
@@ -507,7 +527,7 @@
              (cons 'what comment)
              (cons 'type (vector comment-type n))))
     (! a n)
-    (redirect-to (top-url edit-app a)))
+    (redirect-to (top-url view-app a)))
   
   (define add-tag-formlet (tag-formlet not-tagged))
   (define add-tag-handler (handle-tag add-tag-formlet set-add-applicant-tags! 'add-tag))
@@ -538,7 +558,7 @@
       (push-applicant-decisions! 
        a (list (cons 'who (current-user))
                (cons 'vote decision))))
-    (redirect-to (top-url edit-app a)))
+    (redirect-to (top-url view-app a)))
   
   (define name
     (format "~a ~a"
@@ -695,15 +715,15 @@
 
 (define (next-app req)
   (redirect-to
-   (top-url edit-app (next-applicant?))))
+   (top-url view-app (next-applicant?))))
 
 (define-values (top-dispatch top-url top-applies?)
   (dispatch-rules+applies
    [("") show-root]
    [("logout") logout]
-   [("new") new-app]
    [("next") next-app]
-   [("app" (mongo-dict-arg "applicants")) edit-app]
+   [("edit" (mongo-dict-arg "applicants")) edit-app]
+   [("app" (mongo-dict-arg "applicants")) view-app]
    [("pdf" (mongo-dict-arg "applicants") (string-arg)) show-app-file]))
 
 (define-runtime-path secret-key "secret.key")
