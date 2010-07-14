@@ -335,78 +335,97 @@
 
 (require web-server/formlets/lib)
 
-(define required-string input-string)
-; XXX
-(define optional-string input-string)
-; XXX
-(define optional-boolean
+; XXX return
+(define (required-string def)
+  (text-input #:value (if (bson-null? def)
+                          #f
+                          (string->bytes/utf-8 def))))
+; XXX return
+(define (optional-string def)
+  (text-input #:value (if (bson-null? def)
+                          #f
+                          (string->bytes/utf-8 def))))
+; XXX return
+(define (optional-boolean def)
   (cross (pure (λ (x) 
                  (if (binding:form? x)
                      (bytes=? #"on" (binding:form-value x))
                      bson-null)))
-         (checkbox #"" #f)))
-; XXX
-(define optional-date required-string)
-; XXX
-(define (optional-number-in-range min max)
-  input-int)
-; XXX
-(define (optional-from . opts)
-  (select-input opts #:display symbol->string))
-; XXX
-(define (optional-file accepted)
+         (checkbox #"" 
+                   (if (bson-null? def)
+                       #f def))))
+; XXX use def / return / display
+(define (optional-date def)
+  input-string)
+; XXX return / enforce
+(define (optional-number-in-range def min max)
+  (text-input #:value (if (bson-null? def)
+                          #f
+                          (string->bytes/utf-8 (number->string def)))))
+; XXX return
+(define (optional-from def . opts)
+  (select-input opts
+                #:selected? (λ (x) (eq? def x))
+                #:display symbol->string))
+; XXX return / display / enforce
+(define (optional-file def accepted)
   (cross (pure (λ (x) 
                  (if (binding:file? x)
                      x
                      bson-null)))
          (make-input (λ (n) `(input ([type "file"] [name ,n] [accept ,accepted]))))))
 
+(define (applicant/default f v)
+  (if v
+      (f v)
+      bson-null))
+
 (define (edit-application-form embed/url a)
   (define the-formlet
     (formlet
      (table ([class "appform"])
             (tr (th "First Name")
-                (td ,{required-string . => . first-name})
+                (td ,{(required-string (applicant/default applicant-first-name a)) . => . first-name})
                 (th "Last Name")
-                (td ,{required-string . => . last-name}))
+                (td ,{(required-string (applicant/default applicant-last-name a)) . => . last-name}))
             (tr (th "Prior School")
-                (td ,{optional-string . => . prior-school})
+                (td ,{(optional-string (applicant/default applicant-prior-school a)) . => . prior-school})
                 (th "Prior Degree")
-                (td ,{optional-string . => . degree}))
+                (td ,{(optional-string (applicant/default applicant-degree a)) . => . degree}))
             (tr (th "Cumulative GPA")
-                (td ,{(optional-number-in-range 0 4) . => . cumulative-gpa})
+                (td ,{(optional-number-in-range (applicant/default applicant-cumulative-gpa a) 0 4) . => . cumulative-gpa})
                 (th "Major GPA")
-                (td ,{(optional-number-in-range 0 4) . => . major-gpa}))
+                (td ,{(optional-number-in-range (applicant/default applicant-major-gpa a) 0 4) . => . major-gpa}))
             (tr (th ([colspan "3"]) "Is the student LDS?")
-                (td ,{optional-boolean . => . lds?}))
+                (td ,{(optional-boolean (applicant/default applicant-lds? a)) . => . lds?}))
             (tr (th ([colspan "3"]) "Does the student need financial aid?")
-                (td ,{optional-boolean . => . financial-aid?}))
+                (td ,{(optional-boolean (applicant/default applicant-financial-aid? a)) . => . financial-aid?}))
             (tr (th ([colspan "3"]) "What degree is the applicant seeking?")      
-                (td ,{(optional-from 'PhD 'MS) . => . degree-sought}))
+                (td ,{(optional-from (applicant/default applicant-degree-sought a) 'PhD 'MS) . => . degree-sought}))
             (tr (th ([colspan "2"]) "Citizenship")
-                (td ([colspan "2"]) ,{optional-string . => . citizenship}))
+                (td ([colspan "2"]) ,{(optional-string (applicant/default applicant-citizenship a)) . => . citizenship}))
             
             (tr (th ([colspan "2"]) "GRE Test Date")
-                (td ([colspan "2"]) ,{optional-date . => . gre-date}))
+                (td ([colspan "2"]) ,{(optional-date (applicant/default applicant-gre-date a)) . => . gre-date}))
             (tr (th "GRE Verbal")
-                (td ,{(optional-number-in-range 0 800) . => . gre-verbal-score})
+                (td ,{(optional-number-in-range (applicant/default applicant-gre-verbal-score a) 0 800) . => . gre-verbal-score})
                 (th "Percentile")
-                (td ,{(optional-number-in-range 0 99) . => . gre-verbal-percentile}))
+                (td ,{(optional-number-in-range (applicant/default applicant-gre-verbal-percentile a) 0 99) . => . gre-verbal-percentile}))
             (tr (th "GRE Quant")
-                (td ,{(optional-number-in-range 0 800) . => . gre-quant-score})
+                (td ,{(optional-number-in-range (applicant/default applicant-gre-quant-score a) 0 800) . => . gre-quant-score})
                 (th "Percentile")
-                (td ,{(optional-number-in-range 0 99) . => . gre-quant-percentile}))
+                (td ,{(optional-number-in-range (applicant/default applicant-gre-quant-percentile a) 0 99) . => . gre-quant-percentile}))
             (tr (th "GRE Analytic")
-                (td ,{(optional-number-in-range 0 6) . => . gre-analytic-score})
+                (td ,{(optional-number-in-range (applicant/default applicant-gre-analytic-score a) 0 6) . => . gre-analytic-score})
                 (th "Percentile")
-                (td ,{(optional-number-in-range 0 99) . => . gre-analytic-percentile}))
+                (td ,{(optional-number-in-range (applicant/default applicant-gre-analytic-percentile a) 0 99) . => . gre-analytic-percentile}))
             ; XXX TOEFL
             (tr (th ([colspan "2"]) "Application")
-                (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-application}))
+                (td ([colspan "2"]) ,{(optional-file (applicant/default applicant-pdf-application a) "application/pdf") . => . pdf-application}))
             (tr (th ([colspan "2"]) "Reference Letters")
-                (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-letters}))
+                (td ([colspan "2"]) ,{(optional-file (applicant/default applicant-pdf-letters a) "application/pdf") . => . pdf-letters}))
             (tr (th ([colspan "2"]) "Transcript")
-                (td ([colspan "2"]) ,{(optional-file "application/pdf") . => . pdf-transcript}))
+                (td ([colspan "2"]) ,{(optional-file (applicant/default applicant-pdf-transcript a) "application/pdf") . => . pdf-transcript}))
             (tr (td ([colspan "4"]) nbsp))
             (tr (td ([colspan "4"] [align "center"]) (input ([type "submit"])))))
      first-name))
