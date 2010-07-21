@@ -1,10 +1,12 @@
-#lang scheme
-(require scheme/date
+#lang racket
+(require racket/date
+         (for-syntax unstable/syntax
+                     racket/function)
          (prefix-in 19: srfi/19)
          (planet jaymccarthy/mongodb)
          (planet jaymccarthy/mongodb/dispatch)
-         "id-cookie.ss"
-         "model.ss")
+         "id-cookie.rkt"
+         "model.rkt")
 
 ; View
 (define (footer)
@@ -380,7 +382,17 @@
       (f v)
       bson-null))
 
-(define (edit-application-form embed/url a)
+(define-syntax (applicant-set! stx)
+  (syntax-case stx ()
+    [(_ a f ...)
+     (with-syntax ([(set-applicant-f! ...)
+                    (map (curry format-id #'applicant? "set-applicant-~a!")
+                         (syntax->list #'(f ...)))])
+       (syntax/loc stx
+         (begin (set-applicant-f! a f)
+                ...)))]))
+
+(define (edit-application-form k-url embed/url a)
   (define the-formlet
     (formlet
      (table ([class "appform"])
@@ -428,10 +440,27 @@
                 (td ([colspan "2"]) ,{(optional-file (applicant/default applicant-pdf-transcript a) "application/pdf") . => . pdf-transcript}))
             (tr (td ([colspan "4"]) nbsp))
             (tr (td ([colspan "4"] [align "center"]) (input ([type "submit"])))))
-     first-name))
+     (let ([a
+            (if a
+                a
+                (make-applicant #:first-name first-name
+                                #:last-name last-name
+                                #:comments (vector)
+                                #:tags (vector)
+                                #:decisions (vector)))])
+       (applicant-set! a 
+                       first-name last-name prior-school
+                       degree cumulative-gpa major-gpa
+                       lds? financial-aid? degree-sought
+                       citizenship gre-date
+                       gre-verbal-percentile gre-verbal-score
+                       gre-quant-percentile gre-quant-score
+                       gre-analytic-percentile gre-analytic-score
+                       pdf-application pdf-letters pdf-transcript)
+       a)))
   (define (submit-handler req)
     (formlet-process the-formlet req)
-    "XXX")
+    (redirect-to k-url))
   
   `(form ([action ,(embed/url submit-handler)] [method "post"])
          ,@(formlet-display the-formlet)))
@@ -445,7 +474,7 @@
        ""
        "New Applicant"
        `(div ([id "add"])
-             ,(edit-application-form embed/url #f))
+             ,(edit-application-form (top-url show-root) embed/url #f))
        "All Applicants"
        (render-applicant-table (applicants)
                                #:editing? #t))))))
@@ -461,7 +490,7 @@
       #:breadcrumb
       (list (cons "Applicants" (top-url show-root))
             (cons name #f))
-      (edit-application-form embed/url a)))))
+      (edit-application-form (top-url edit-app a) embed/url a)))))
 
 ; Controller 
 (require scheme/runtime-path
