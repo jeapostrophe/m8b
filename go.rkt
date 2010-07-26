@@ -393,6 +393,14 @@
                 ...)))]))
 
 (define (edit-application-form k-url embed/url a)
+  ; XXX
+  (define toefl:kind bson-null)
+  (define toefl:date bson-null)
+  (define toefl:reading bson-null)
+  (define toefl:listening bson-null)
+  (define toefl:writing bson-null)
+  (define toefl:speaking/structure bson-null)
+  
   (define the-formlet
     (formlet
      (table ([class "appform"])
@@ -417,21 +425,34 @@
             (tr (th ([colspan "2"]) "Citizenship")
                 (td ([colspan "2"]) ,{(optional-string (applicant/default applicant-citizenship a)) . => . citizenship}))
             
-            (tr (th ([colspan "2"]) "GRE Test Date")
-                (td ([colspan "2"]) ,{(optional-date (applicant/default applicant-gre-date a)) . => . gre-date}))
-            (tr (th "GRE Verbal")
+            (tr (td ([colspan "4"]) nbsp))
+            
+            (tr (th "GRE") (td nbsp)
+                (th "Date") (td ,{(optional-date (applicant/default applicant-gre-date a)) . => . gre-date}))
+            (tr (th "Verbal")
                 (td ,{(optional-number-in-range (applicant/default applicant-gre-verbal-score a) 0 800) . => . gre-verbal-score})
                 (th "Percentile")
                 (td ,{(optional-number-in-range (applicant/default applicant-gre-verbal-percentile a) 0 99) . => . gre-verbal-percentile}))
-            (tr (th "GRE Quant")
+            (tr (th "Quant")
                 (td ,{(optional-number-in-range (applicant/default applicant-gre-quant-score a) 0 800) . => . gre-quant-score})
                 (th "Percentile")
                 (td ,{(optional-number-in-range (applicant/default applicant-gre-quant-percentile a) 0 99) . => . gre-quant-percentile}))
-            (tr (th "GRE Analytic")
+            (tr (th "Analytic")
                 (td ,{(optional-number-in-range (applicant/default applicant-gre-analytic-score a) 0 6) . => . gre-analytic-score})
                 (th "Percentile")
                 (td ,{(optional-number-in-range (applicant/default applicant-gre-analytic-percentile a) 0 99) . => . gre-analytic-percentile}))
-            ; XXX TOEFL
+            
+            (tr (td ([colspan "4"]) nbsp))
+           
+            (tr (th "TOEFL") (td ,{(optional-from toefl:kind 'None 'IBT 'PBT) . => . toefl:kind})
+                (th "Date") (td ,{(optional-date toefl:date) . => . toefl:date}))
+            (tr (th "Reading") (td ,{(optional-number-in-range toefl:reading 0 100) . => . toefl:reading})
+                (th "Listening") (td ,{(optional-number-in-range toefl:listening 0 100) . => . toefl:listening}))
+            (tr (th "Writing") (td ,{(optional-number-in-range toefl:writing 0 100) . => . toefl:writing})
+                (th "Speaking/Structure") (td ,{(optional-number-in-range toefl:speaking/structure 0 100) . => . toefl:speaking/structure}))
+            
+            (tr (td ([colspan "4"]) nbsp))
+
             (tr (th ([colspan "2"]) "Application")
                 (td ([colspan "2"]) ,{(optional-file (applicant/default applicant-pdf-application a) "application/pdf") . => . pdf-application}))
             (tr (th ([colspan "2"]) "Reference Letters")
@@ -448,6 +469,7 @@
                                 #:comments (vector)
                                 #:tags (vector)
                                 #:decisions (vector)))])
+       ; XXX toefl
        (applicant-set! a 
                        first-name last-name prior-school
                        degree cumulative-gpa major-gpa
