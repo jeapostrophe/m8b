@@ -469,7 +469,25 @@
                                 #:comments (vector)
                                 #:tags (vector)
                                 #:decisions (vector)))])
-       ; XXX toefl
+       (define toefl
+         (match toefl:kind
+           [(? bson-null?) bson-null]
+           ['None bson-null]
+           ['IBT 
+            (hasheq 'kind 'IBT
+                    'date toefl:date
+                    'read toefl:reading
+                    'write toefl:writing
+                    'listen toefl:listening
+                    'speak toefl:speaking/structure)]
+           ['PBT 
+            (hasheq 'kind 'PBT
+                    'date toefl:date
+                    'listen toefl:listening
+                    'structure toefl:speaking/structure
+                    'reading toefl:reading
+                    'writing toefl:writing)]))
+       
        (applicant-set! a 
                        first-name last-name prior-school
                        degree cumulative-gpa major-gpa
@@ -478,6 +496,7 @@
                        gre-verbal-percentile gre-verbal-score
                        gre-quant-percentile gre-quant-score
                        gre-analytic-percentile gre-analytic-score
+                       toefl
                        pdf-application pdf-letters pdf-transcript)
        a)))
   (define (submit-handler req)
