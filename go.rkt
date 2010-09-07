@@ -596,7 +596,7 @@
     (sequence-partition applicant-tagged-with? (faculty)))
   (define comment-formlet
     (formlet 
-     ,{(textarea-input) . => . comment}
+     ,{(to-string (required (textarea-input))) . => . comment}
      comment))
   (define (tag-formlet facs)
     (formlet
@@ -766,10 +766,14 @@
                     (input ([type "submit"] [value "Decide"])))))))
       
       `(h3 "Decisions")
-      (apply data-table
-             (for/list ([(vote who) (in-hash (applicant-vote->who a))])
-               (list (symbol->string vote)
-                     `(p ,@who))))
+      (local [(define votes (applicant-vote->who a))]
+        (if (for/or ([(vote who) (in-hash votes)])
+              (ormap (curry string=? (current-user)) who))
+            (apply data-table
+                   (for/list ([(vote who) (in-hash votes)])
+                     (list (symbol->string vote)
+                           `(p ,@who))))
+            "Redacted"))
       
       `(h3 "Comments")
       `(div ,@(for/list ([c (sort (vector->list (applicant-comments a))
@@ -826,12 +830,16 @@
 ; XXX look nice
 (define login-formlet
   (formlet
-   (span "Name:" 
-         ,{(select-input
-            (faculty)
-            #:display faculty-name)
-           . => . who})
-   who))
+   (div
+    (span "Name:" 
+          ,{(select-input
+             (faculty)
+             #:display faculty-name)
+            . => . who})
+    (span "Password:" 
+          ,{input-string . => . passwd}))
+   (values who passwd)))
+(require file/md5)
 (define (login req)
   (define log-req
     (send/suspend
@@ -842,13 +850,18 @@
               (form ([action ,k-url] [method "post"])
                     ,@(formlet-display login-formlet)
                     (input ([type "submit"] [value "Log in"]))))))))
-  (define who (formlet-process login-formlet log-req))
-  (redirect-to (top-url show-root)
-               #:headers
-               (list
-                (cookie->header
-                 ; XXX It is a bit wrong to use the name
-                 (make-id-cookie m8b-key (faculty-name who))))))
+  (define-values 
+    (who passwd)
+    (formlet-process login-formlet log-req))
+  
+  (if (bytes=? (md5 (faculty-name who)) (string->bytes/utf-8 passwd))
+      (redirect-to (top-url show-root)
+                   #:headers
+                   (list
+                    (cookie->header
+                     ; XXX It is a bit wrong to use the name
+                     (make-id-cookie m8b-key (faculty-name who)))))
+      (login req)))
 
 (define (login-then-top-dispatch req)
   (if (top-applies? req)

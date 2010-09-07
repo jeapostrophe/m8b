@@ -1,3 +1,4 @@
 #!/bin/bash
-
-exec mongod --dbpath root --noauth --nohttpinterface
+db=$1
+mkdir -p ${db}
+exec mongod --dbpath ${db} --noauth --nohttpinterface

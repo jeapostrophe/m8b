@@ -19,7 +19,7 @@
 (define (string-empty? s)
   (zero? (string-length s)))
 
-(define-runtime-path csv-path "examples.csv")
+(define-runtime-path csv-path "admissions-winter-2011.csv")
 (define-runtime-path example-pdf "example.pdf")
 
 (define example-pdf-bytes
@@ -55,8 +55,8 @@
            ["MS" 'ms])
          #:degree Degree
          #:financial-aid? (match ApplyForFin
-                            ["Y" #t]
-                            ["N" #f])
+                            [(or "Yes" "Y") #t]
+                            [(or "No"  "N") #f])
          #:gre-analytic-percentile (parse% GRE_AP)
          #:gre-analytic-score (string->number* GRE_A)
          #:gre-quant-percentile (parse% GRE_QP)
@@ -79,15 +79,18 @@
                    (cons 'write (string->number TOEFL-Writing))))
          
          #:pdf-application 
-         (if (zero? (random 10))
+         bson-null
+         #;(if (zero? (random 10))
              bson-null
              (mongo-dict-id example-pdf-obj))
          #:pdf-letters
-         (if (zero? (random 10))
+         bson-null
+         #;(if (zero? (random 10))
              bson-null
              (mongo-dict-id example-pdf-obj))
          #:pdf-transcript
-         (if (zero? (random 10))
+         bson-null
+         #;(if (zero? (random 10))
              bson-null
              (mongo-dict-id example-pdf-obj))
          
@@ -110,4 +113,4 @@
   (make-faculty #:name n))
 
 (for ([a (applicants)])
-  (printf (applicant-first-name a)))
+  (displayln (applicant-first-name a)))

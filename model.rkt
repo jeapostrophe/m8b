@@ -26,7 +26,7 @@
    [cumulative-gpa]
    [major-gpa]
    [degree]
-   [degree-sought]
+   [degree-sought #:required]
    [toefl]
    ; Files
    [pdf-application] ; apple-script / button_delete_green
