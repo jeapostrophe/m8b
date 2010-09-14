@@ -20,13 +20,7 @@
   (zero? (string-length s)))
 
 (define-runtime-path csv-path "admissions-winter-2011.csv")
-(define-runtime-path example-pdf "example.pdf")
-
-(define example-pdf-bytes
-  (file->bytes example-pdf))
-(define example-pdf-obj
-  (make-file #:uploaded (19:current-time)
-             #:bytes example-pdf-bytes))
+(define-runtime-path pdf-path "admissions-winter-2011")
 
 (with-input-from-file csv-path
   (lambda ()
@@ -39,6 +33,16 @@
               Area DesiredAdvisor TOEFL-Cleared TOEFL-Kind TOEFL-Date TOEFL-Overall
               TOEFL-Read TOEFL-Listen TOEFL-Speaking TOEFL-Writing)
         (printf "Adding ~a ~a~n" FirstName LastName)
+        
+        (define (get-pdf-type type)
+          (define this-pdf
+            (build-path pdf-path (format "~a~a~a.pdf" LastName FirstName type)))
+          (define this-pdf-bytes
+            (file->bytes this-pdf))
+          (mongo-dict-id 
+           (make-file #:uploaded (19:current-time)
+                      #:bytes this-pdf-bytes)))
+        
         (make-applicant 
          #:first-name FirstName
          #:last-name LastName
@@ -79,20 +83,11 @@
                    (cons 'write (string->number TOEFL-Writing))))
          
          #:pdf-application 
-         bson-null
-         #;(if (zero? (random 10))
-             bson-null
-             (mongo-dict-id example-pdf-obj))
+         (get-pdf-type "App")
          #:pdf-letters
-         bson-null
-         #;(if (zero? (random 10))
-             bson-null
-             (mongo-dict-id example-pdf-obj))
+         (get-pdf-type "Letters")
          #:pdf-transcript
-         bson-null
-         #;(if (zero? (random 10))
-             bson-null
-             (mongo-dict-id example-pdf-obj))
+         (get-pdf-type "Transcript")
          
          #:comments (vector)
          #:tags (vector)

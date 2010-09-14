@@ -245,7 +245,10 @@
   (curry number-field/limits->xexpr-forest applicant-major-gpa 3.5 3.25))
 (define field->applicant-field-xexpr
   (make-hasheq
-   (list (cons 'decision (compose vote->who->xexpr-forest applicant-vote->who))
+   (list (cons 'decision (compose vote->who->xexpr-forest 
+                                  (λ (a) (if (current-user-has-decided? a)
+                                             (applicant-vote->who a)
+                                             (hasheq)))))
          (cons 'last-name (compose string->xexpr-forest applicant-last-name))
          (cons 'first-name (compose string->xexpr-forest applicant-first-name))
          (cons 'raw-gre (compose number->xexpr-forest applicant-raw-gre))
@@ -587,6 +590,10 @@
    empty
    (list (file-bytes file))))
 
+(define (current-user-has-decided? a)
+  (for/or ([(vote who) (in-hash (applicant-vote->who a))])
+    (ormap (curry string=? (current-user)) who)))
+
 (define (view-app req a)
   (define original-tags (applicant-tags a))
   (define (applicant-tagged-with? f)
@@ -767,8 +774,7 @@
       
       `(h3 "Decisions")
       (local [(define votes (applicant-vote->who a))]
-        (if (for/or ([(vote who) (in-hash votes)])
-              (ormap (curry string=? (current-user)) who))
+        (if (current-user-has-decided? a)
             (apply data-table
                    (for/list ([(vote who) (in-hash votes)])
                      (list (symbol->string vote)
@@ -839,7 +845,6 @@
     (span "Password:" 
           ,{input-string . => . passwd}))
    (values who passwd)))
-(require file/md5)
 (define (login req)
   (define log-req
     (send/suspend
@@ -854,7 +859,7 @@
     (who passwd)
     (formlet-process login-formlet log-req))
   
-  (if (bytes=? (md5 (faculty-name who)) (string->bytes/utf-8 passwd))
+  (if (bytes=? m8b-key (string->bytes/utf-8 passwd))
       (redirect-to (top-url show-root)
                    #:headers
                    (list
