@@ -660,6 +660,8 @@
     (format "~a ~a"
             (applicant-first-name a)
             (applicant-last-name a)))
+  (define has-decided?
+    (current-user-has-decided? a))
   
   (send/suspend/dispatch
    (lambda (embed/url)
@@ -774,7 +776,7 @@
       
       `(h3 "Decisions")
       (local [(define votes (applicant-vote->who a))]
-        (if (current-user-has-decided? a)
+        (if has-decided?
             (apply data-table
                    (for/list ([(vote who) (in-hash votes)])
                      (list (symbol->string vote)
@@ -800,9 +802,12 @@
                        (span ([class "who"]) ,who) " removed the tag " (span ([class "tag"]) ,tag) "." (br)
                        ,what ,(time->xexpr when))]
                   [(vector 'decision decision)
-                   `(p ([class "comment"])
-                       (span ([class "who"]) ,who) " made the decision " (span ([class "decision"]) ,(symbol->string decision)) "." (br)
-                       ,what ,(time->xexpr when))])))))))
+                   (if has-decided?
+                       `(p ([class "comment"])
+                           (span ([class "who"]) ,who) " made the decision " (span ([class "decision"]) ,(symbol->string decision)) "." (br)
+                           ,what ,(time->xexpr when))
+                       `(p ([class "comment"])
+                           "Redacted"))])))))))
 
 (define (logout req)
   (redirect-to 
