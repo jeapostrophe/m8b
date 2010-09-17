@@ -71,7 +71,7 @@
                    gre-verbal-score gre-verbal-percentile
                    gre-quant-score gre-quant-percentile
                    gre-analytic-score gre-analytic-percentile
-                   prior-school cumulative-gpa major-gpa degree degree-sought toefl
+                   prior-school cumulative-gpa major-gpa degree degree-sought
                    pdf-application pdf-letters pdf-transcript))))
 
 ; XXX [toefl-okay? (symbols 'waived 'cleared 'not-cleared)]
