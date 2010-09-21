@@ -1,5 +1,7 @@
 #lang racket
 (require racket/date
+         net/url
+         web-server/http
          (for-syntax unstable/syntax
                      racket/function)
          (prefix-in 19: srfi/19)
@@ -838,19 +840,19 @@
   (for/or ([e (mongo-dict-query "faculty" (list (cons 'name (current-user))))])
     e))
 
-; XXX look nice
-(define login-formlet
-  (formlet
-   (div
-    (span "Name:" 
-          ,{(select-input
-             (faculty)
-             #:display faculty-name)
-            . => . who})
-    (span "Password:" 
-          ,{input-string . => . passwd}))
-   (values who passwd)))
 (define (login req)
+  ; XXX look nice
+  (define login-formlet
+    (formlet
+     (div
+      (span "Name:" 
+            ,{(select-input
+               (faculty)
+               #:display faculty-name)
+              . => . who})
+      (span "Password:" 
+            ,{input-string . => . passwd}))
+     (values who passwd)))
   (define log-req
     (send/suspend
      (λ (k-url)
@@ -873,15 +875,29 @@
                      (make-id-cookie m8b-key (faculty-name who)))))
       (login req)))
 
+(define (call-with-custodian-shutdown thunk)
+  (define cust (make-custodian))
+  (dynamic-wind void
+                thunk
+                (λ ()
+                  (custodian-shutdown-all cust))))
+  
 (define (login-then-top-dispatch req)
-  (if (top-applies? req)
-      (match (request-valid-id-cookie m8b-key req)
-        [#f
-         (login req)]
-        [id
-         (parameterize ([current-user id])
-           (top-dispatch req))])
-      (top-dispatch req)))
+  (printf "[~a] ~a\n" (current-seconds) (url->string (request-uri req)))
+  (call-with-custodian-shutdown
+   (λ ()
+     (call-with-model
+      (λ ()
+        (if (top-applies? req)
+            (let ()
+              (define maybe-id (request-valid-id-cookie m8b-key req))
+              (match maybe-id
+                [#f
+                 (login req)]
+                [id
+                 (parameterize ([current-user id])
+                   (top-dispatch req))]))
+            (top-dispatch req)))))))
 
 ; Configuration
 (define-runtime-path static-path "static")

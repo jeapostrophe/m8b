@@ -3,10 +3,12 @@
          (planet jaymccarthy/mongodb)
          (for-syntax unstable/syntax))
 
-(define mongo-server (create-mongo))
-(define root-db
-  (make-mongo-db mongo-server "m8b"))
-(current-mongo-db root-db)
+(define (call-with-model thunk)
+  (define mongo-server (create-mongo))
+  (define root-db
+    (make-mongo-db mongo-server "m8b"))
+  (parameterize ([current-mongo-db root-db])
+    (thunk)))
 
 (define-mongo-struct
   applicant "applicants"
