@@ -782,7 +782,9 @@
             (apply data-table
                    (for/list ([(vote who) (in-hash votes)])
                      (list (symbol->string vote)
-                           `(p ,@who))))
+                           `(ul ([class "horiz"])
+                                ,@(for/list ([t who])
+                                    `(li ,t))))))
             "Redacted"))
       
       `(h3 "Comments")

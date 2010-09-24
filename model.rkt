@@ -4,11 +4,19 @@
          (for-syntax unstable/syntax))
 
 (define (call-with-model thunk)
-  (define mongo-server (create-mongo))
-  (define root-db
-    (make-mongo-db mongo-server "m8b"))
-  (parameterize ([current-mongo-db root-db])
-    (thunk)))
+  (define mongo-server #f)
+  (define root-db #f)
+  (dynamic-wind 
+   (λ ()
+     (set! mongo-server (create-mongo))
+     (if root-db
+         (set-mongo-db-mongo! root-db mongo-server)
+         (set! root-db (make-mongo-db mongo-server "m8b"))))
+   (λ ()
+     (parameterize ([current-mongo-db root-db])
+       (thunk)))
+   (λ ()
+     (close-mongo! mongo-server))))
 
 (define-mongo-struct
   applicant "applicants"
