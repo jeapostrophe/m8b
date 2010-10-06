@@ -34,6 +34,7 @@
                            ,@(if (next-applicant?)
                                  (list `(a ([href ,(top-url next-app)]) "next") " | ")
                                  empty)
+                           (a ([href ,(top-url archive)]) "archive") " | "
                            (a ([href ,(top-url logout)]) "logout"))
                     ""))
           (div ([class "content"])
@@ -596,7 +597,24 @@
   (for/or ([(vote who) (in-hash (applicant-vote->who a))])
     (ormap (curry string=? (current-user)) who)))
 
+(define (applicant-name a)
+  (format "~a ~a"
+          (applicant-first-name a)
+          (applicant-last-name a)))
+
 (define (view-app req a)
+  (send/suspend/dispatch
+   (lambda (embed/url)
+     (apply 
+      template
+      #:breadcrumb
+      (list (cons "Applicants" (top-url show-root))
+            (cons (applicant-name a) #f))
+      
+      (view-app-body a embed/url)))))
+
+(define (view-app-body a embed/url)
+  (define name (applicant-name a))
   (define original-tags (applicant-tags a))
   (define (applicant-tagged-with? f)
     (define n (faculty-name f))
@@ -657,161 +675,152 @@
        a (list (cons 'who (current-user))
                (cons 'vote decision))))
     (redirect-to (top-url view-app a)))
-  
-  (define name
-    (format "~a ~a"
-            (applicant-first-name a)
-            (applicant-last-name a)))
   (define has-decided?
     (current-user-has-decided? a))
   
-  (send/suspend/dispatch
-   (lambda (embed/url)
-     (template
-      #:breadcrumb
-      (list (cons "Applicants" (top-url show-root))
-            (cons name #f))
-      
-      (local [(define (icon-url f)
-                (format "/icons/flavour-extended-png/~a.png" f))
-              (define (show-link applicant-file-contents name yes-icon no-icon-color)
-                (define exists? (not (bson-null? (applicant-file-contents a))))
-                (define no-icon (format "button_delete_~a" no-icon-color))
-                `(td
-                  ,(if exists?
-                       `(a ([href ,(top-url show-app-file a (format "~a.pdf" name))]) (img ([src ,(icon-url yes-icon)])))
-                       `(img ([src ,(icon-url no-icon)]))) (br)
-                                                           ,name))]
-        `(table ([class "pdfs"])
-                (tr
-                 ,(show-link applicant-pdf-application "Application" "apple-script" "green")
-                 ,(show-link applicant-pdf-letters "Letters" "document_blank" "blue")
-                 ,(show-link applicant-pdf-transcript "Transcripts" "curriculum_vitae" "red"))))
-      
-      (data-table
-       (list "Name" name
-             "Degree Sought" `(span ,@(degree-sought->xexpr-forest (applicant-degree-sought a))))
-       
-       (list
-        "Citizenship" (applicant-citizenship a)
-        "LDS?" (boolean->xexpr (applicant-lds? a))
-        "Financial Aid?" (boolean->xexpr (applicant-financial-aid? a)))
-       
-       (list
-        "Prior School" (applicant-prior-school a))
-       (list
-        "Degree" (applicant-degree a))
-       
-       
-       (list
-        "Cumulative GPA" (number->xexpr (applicant-cumulative-gpa a))
-        "Major GPA" `(span ,@(major-gpa->xexpr-forest a)))
-       
-       (list
-        "GRE" (date->xexpr (applicant-gre-date a))
-        "Verbal" `(span ,@(gre-verbal->xexpr-forest a) nbsp
-                        ,(maybe-add-parens (percentage->xexpr (applicant-gre-verbal-percentile a))))
-        "Quantative" `(span ,@(gre-quant->xexpr-forest a) nbsp
-                            ,(maybe-add-parens (percentage->xexpr (applicant-gre-quant-percentile a))))
-        "Analytic" `(span ,@(gre-anal->xexpr-forest a) nbsp
-                          ,(maybe-add-parens (percentage->xexpr (applicant-gre-analytic-percentile a)))))
-       
-       (if (bson-null? (applicant-toefl a))
-           #f
-           (local [(define toefl (applicant-toefl a))
-                   (define kind (hash-ref toefl 'kind))]
-             (list*
-              "TOEFL" (date->xexpr (hash-ref toefl 'date))
-              (match kind
-                ['IBT
-                 (define read (hash-ref toefl 'read))
-                 (define write (hash-ref toefl 'write))
-                 (define listen (hash-ref toefl 'listen))
-                 (define speak (hash-ref toefl 'speak))
-                 (define total (+ read write listen speak))
-                 (list "Total" (number->string total)
-                       "Reading" (number->string read)
-                       "Listening" (number->string listen)
-                       "Speaking" (number->string speak)
-                       "Writing" (number->string write))]
-                ['PBT
-                 (define listen (hash-ref toefl 'listen))
-                 (define structure (hash-ref toefl 'structure))
-                 (define reading (hash-ref toefl 'reading))
-                 (define writing (hash-ref toefl 'writing))
-                 (define total (+ listen structure reading))
-                 (list "Total" (number->string total)
-                       "Listening" (number->string listen)
-                       "Structure" (number->string structure)
-                       "Reading" (number->string reading)
-                       "Writing" (number->string writing))]))))
-       
-       (local [(define tags (applicant-tags a))]
-         (if (zero? (vector-length tags))
-             #f
-             (list "Faculty"
-                   `(ul ([class "horiz"])
-                        ,@(for/list ([t tags])
-                            `(li ,t))))))) 
-      
-      `(table
-        ([class "edit"])
-        (thead
-         (tr (th "Add Tag")
-             (th "Remove Tag")
-             (th "Decide")))
-        (tbody
-         (tr
-          (td ,(if (empty? not-tagged)
-                   ""
-                   `(form ([action ,(embed/url add-tag-handler)] [method "post"])
-                          ,@(formlet-display add-tag-formlet) (br)
-                          (input ([type "submit"] [value "Add Tag"])))))
-          (td ,(if (empty? tagged)
-                   ""
-                   `(form ([action ,(embed/url remove-tag-handler)] [method "post"])
-                          ,@(formlet-display remove-tag-formlet) (br)
-                          (input ([type "submit"] [value "Remove Tag"])))))
-          (td (form ([action ,(embed/url handle-dec)] [method "post"])
-                    ,@(formlet-display dec-formlet) (br)
-                    (input ([type "submit"] [value "Decide"])))))))
-      
-      `(h3 "Decisions")
-      (local [(define votes (applicant-vote->who a))]
-        (if has-decided?
-            (apply data-table
-                   (for/list ([(vote who) (in-hash votes)])
-                     (list (symbol->string vote)
-                           `(ul ([class "horiz"])
-                                ,@(for/list ([t who])
-                                    `(li ,t))))))
-            "Redacted"))
-      
-      `(h3 "Comments")
-      `(div ,@(for/list ([c (sort (vector->list (applicant-comments a))
-                                  19:time>=?
-                                  #:key (lambda (c)
-                                          (hash-ref c 'when)))])
-                (define who (hash-ref c 'who))
-                (define when (hash-ref c 'when))
-                (define what (hash-ref c 'what))
-                (define type (hash-ref c 'type))
-                (match type
-                  [(vector 'add-tag tag)
-                   `(p ([class "comment"])
-                       (span ([class "who"]) ,who) " added the tag " (span ([class "tag"]) ,tag) "." (br)
-                       ,what ,(time->xexpr when))]
-                  [(vector 'remove-tag tag)
-                   `(p ([class "comment"])
-                       (span ([class "who"]) ,who) " removed the tag " (span ([class "tag"]) ,tag) "." (br)
-                       ,what ,(time->xexpr when))]
-                  [(vector 'decision decision)
-                   (if has-decided?
-                       `(p ([class "comment"])
-                           (span ([class "who"]) ,who) " made the decision " (span ([class "decision"]) ,(symbol->string decision)) "." (br)
-                           ,what ,(time->xexpr when))
-                       `(p ([class "comment"])
-                           "Redacted"))])))))))
+  (list
+   (local [(define (icon-url f)
+             (format "/icons/flavour-extended-png/~a.png" f))
+           (define (show-link applicant-file-contents name yes-icon no-icon-color)
+             (define exists? (not (bson-null? (applicant-file-contents a))))
+             (define no-icon (format "button_delete_~a" no-icon-color))
+             `(td
+               ,(if exists?
+                    `(a ([href ,(top-url show-app-file a (format "~a.pdf" name))]) (img ([src ,(icon-url yes-icon)])))
+                    `(img ([src ,(icon-url no-icon)]))) (br)
+                                                        ,name))]
+     `(table ([class "pdfs"])
+             (tr
+              ,(show-link applicant-pdf-application "Application" "apple-script" "green")
+              ,(show-link applicant-pdf-letters "Letters" "document_blank" "blue")
+              ,(show-link applicant-pdf-transcript "Transcripts" "curriculum_vitae" "red"))))
+   
+   (data-table
+    (list "Name" name
+          "Degree Sought" `(span ,@(degree-sought->xexpr-forest (applicant-degree-sought a))))
+    
+    (list
+     "Citizenship" (applicant-citizenship a)
+     "LDS?" (boolean->xexpr (applicant-lds? a))
+     "Financial Aid?" (boolean->xexpr (applicant-financial-aid? a)))
+    
+    (list
+     "Prior School" (applicant-prior-school a))
+    (list
+     "Degree" (applicant-degree a))
+    
+    
+    (list
+     "Cumulative GPA" (number->xexpr (applicant-cumulative-gpa a))
+     "Major GPA" `(span ,@(major-gpa->xexpr-forest a)))
+    
+    (list
+     "GRE" (date->xexpr (applicant-gre-date a))
+     "Verbal" `(span ,@(gre-verbal->xexpr-forest a) nbsp
+                     ,(maybe-add-parens (percentage->xexpr (applicant-gre-verbal-percentile a))))
+     "Quantative" `(span ,@(gre-quant->xexpr-forest a) nbsp
+                         ,(maybe-add-parens (percentage->xexpr (applicant-gre-quant-percentile a))))
+     "Analytic" `(span ,@(gre-anal->xexpr-forest a) nbsp
+                       ,(maybe-add-parens (percentage->xexpr (applicant-gre-analytic-percentile a)))))
+    
+    (if (bson-null? (applicant-toefl a))
+        #f
+        (local [(define toefl (applicant-toefl a))
+                (define kind (hash-ref toefl 'kind))]
+          (list*
+           "TOEFL" (date->xexpr (hash-ref toefl 'date))
+           (match kind
+             ['IBT
+              (define read (hash-ref toefl 'read))
+              (define write (hash-ref toefl 'write))
+              (define listen (hash-ref toefl 'listen))
+              (define speak (hash-ref toefl 'speak))
+              (define total (+ read write listen speak))
+              (list "Total" (number->string total)
+                    "Reading" (number->string read)
+                    "Listening" (number->string listen)
+                    "Speaking" (number->string speak)
+                    "Writing" (number->string write))]
+             ['PBT
+              (define listen (hash-ref toefl 'listen))
+              (define structure (hash-ref toefl 'structure))
+              (define reading (hash-ref toefl 'reading))
+              (define writing (hash-ref toefl 'writing))
+              (define total (+ listen structure reading))
+              (list "Total" (number->string total)
+                    "Listening" (number->string listen)
+                    "Structure" (number->string structure)
+                    "Reading" (number->string reading)
+                    "Writing" (number->string writing))]))))
+    
+    (local [(define tags (applicant-tags a))]
+      (if (zero? (vector-length tags))
+          #f
+          (list "Faculty"
+                `(ul ([class "horiz"])
+                     ,@(for/list ([t tags])
+                         `(li ,t))))))) 
+   
+   (if embed/url
+       `(table
+         ([class "edit"])
+         (thead
+          (tr (th "Add Tag")
+              (th "Remove Tag")
+              (th "Decide")))
+         (tbody
+          (tr
+           (td ,(if (empty? not-tagged)
+                    ""
+                    `(form ([action ,(embed/url add-tag-handler)] [method "post"])
+                           ,@(formlet-display add-tag-formlet) (br)
+                           (input ([type "submit"] [value "Add Tag"])))))
+           (td ,(if (empty? tagged)
+                    ""
+                    `(form ([action ,(embed/url remove-tag-handler)] [method "post"])
+                           ,@(formlet-display remove-tag-formlet) (br)
+                           (input ([type "submit"] [value "Remove Tag"])))))
+           (td (form ([action ,(embed/url handle-dec)] [method "post"])
+                     ,@(formlet-display dec-formlet) (br)
+                     (input ([type "submit"] [value "Decide"])))))))
+       'nbsp)
+   
+   `(h3 "Decisions")
+   (local [(define votes (applicant-vote->who a))]
+     (if has-decided?
+         (apply data-table
+                (for/list ([(vote who) (in-hash votes)])
+                  (list (symbol->string vote)
+                        `(ul ([class "horiz"])
+                             ,@(for/list ([t who])
+                                 `(li ,t))))))
+         "Redacted"))
+   
+   `(h3 "Comments")
+   `(div ,@(for/list ([c (sort (vector->list (applicant-comments a))
+                               19:time>=?
+                               #:key (lambda (c)
+                                       (hash-ref c 'when)))])
+             (define who (hash-ref c 'who))
+             (define when (hash-ref c 'when))
+             (define what (hash-ref c 'what))
+             (define type (hash-ref c 'type))
+             (match type
+               [(vector 'add-tag tag)
+                `(p ([class "comment"])
+                    (span ([class "who"]) ,who) " added the tag " (span ([class "tag"]) ,tag) "." (br)
+                    ,what ,(time->xexpr when))]
+               [(vector 'remove-tag tag)
+                `(p ([class "comment"])
+                    (span ([class "who"]) ,who) " removed the tag " (span ([class "tag"]) ,tag) "." (br)
+                    ,what ,(time->xexpr when))]
+               [(vector 'decision decision)
+                (if has-decided?
+                    `(p ([class "comment"])
+                        (span ([class "who"]) ,who) " made the decision " (span ([class "decision"]) ,(symbol->string decision)) "." (br)
+                        ,what ,(time->xexpr when))
+                    `(p ([class "comment"])
+                        "Redacted"))])))))
 
 (define (logout req)
   (redirect-to 
@@ -825,10 +834,25 @@
   (redirect-to
    (top-url view-app (next-applicant?))))
 
+(define (archive req)
+  (apply 
+   template
+   #:breadcrumb
+   (list (cons "Applicants" (top-url show-root))
+         (cons "Archive" #f))
+   
+   (apply append
+          (for/list ([a (mongo-dict-query "applicants" (hasheq))])
+            (list*
+             '(hr)
+             `(h1 ,(applicant-name a))
+             (view-app-body a #f))))))
+
 (define-values (top-dispatch top-url top-applies?)
   (dispatch-rules+applies
    [("") show-root]
    [("logout") logout]
+   [("archive") archive]
    [("next") next-app]
    [("edit" (mongo-dict-arg "applicants")) edit-app]
    [("app" (mongo-dict-arg "applicants")) view-app]
@@ -853,7 +877,7 @@
                #:display faculty-name)
               . => . who})
       (span "Password:" 
-            ,{input-string . => . passwd}))
+            ,{(to-string (required (password-input))) . => . passwd}))
      (values who passwd)))
   (define log-req
     (send/suspend
