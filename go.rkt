@@ -927,6 +927,8 @@
 
 ; Configuration
 (define-runtime-path static-path "static")
+(define-runtime-path private-key "private-key.pem")
+(define-runtime-path server-cert "server-cert.pem")
 
 (serve/servlet login-then-top-dispatch
                #:port 9000
@@ -935,4 +937,6 @@
                #:launch-browser? #t
                #:servlet-regexp #rx""
                #:servlet-path "/"
+               #:ssl-cert server-cert
+               #:ssl-key private-key
                #:extra-files-paths (list static-path))

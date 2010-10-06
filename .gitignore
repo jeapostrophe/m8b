@@ -1,6 +1,8 @@
+*.pem
+compiled
+db
 add-one.rkt
 admissions*
-root
 example.pdf
 examples.csv
 secret.key
