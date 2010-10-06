@@ -524,7 +524,9 @@
              ,(edit-application-form (top-url show-root) embed/url #f))
        "All Applicants"
        (render-applicant-table (applicants)
-                               #:editing? #t))))))
+                               #:editing? #t)
+       "Manage Faculty Accounts"
+       "XXX")))))
 
 (define (edit-app req a)
   (define name

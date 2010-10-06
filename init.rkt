@@ -95,16 +95,39 @@
          )])
      (current-input-port))))
 
-(for ([n (in-list
-          '("ADMIN"
-            "Cory Barker" "Bill Barrett" "Robert Burton" "Mark Clement"
-            "Parris Egbert" "David Embley" "J. Kelly Flanagan" "Christophe Giraud-Carrier"
-            "Michal A. Goodrich" "Michael Jones" "Charles Knutson" "Tony Martinez"
-            "Jay McCarthy" "Eric Mercer" "Bryan Morse" "Dennis Ng"
-            "Dan Olsen" "Eric Ringger" "Ken Rodham" "Paul Roper"
-            "Kent Seamons" "Tom Sederberg" "Kevin Seppi" "Quinn Snell"
-            "Dan Ventura" "Sean Warnick" "Philip Windley" "Scott Woodfield"
-            "Daniel Zappala"))])
+(for ([n*netid*email (in-list
+          '(("ADMIN" #f #f)
+            ("COMMITTEE" #f #f)
+            ("Cory Barker" #f "corybarker@byu.edu")
+            ("Bill Barrett" #f "barrett@cs.byu.edu")
+            ("Robert Burton" #f "rpburton@cs.byu.edu")
+            ("Mark Clement" #f "clement@cs.byu.edu")
+            ("Parris Egbert" #f "egbert@cs.byu.edu")
+            ("David Embley" #f "embley@cs.byu.edu")
+            ("J. Kelly Flanagan" #f "kelly_flanagan@byu.edu")
+            ("Christophe Giraud-Carrier" #f "cgc@cs.byu.edu")
+            ("Michael A. Goodrich" #f "mike@cs.byu.edu")
+            ("Michael Jones" #f "jones@cs.byu.edu")
+            ("Charles Knutson" #f "knutson@cs.byu.edu")
+            ("Tony Martinez" #f "martinez@cs.byu.edu")
+            ("Jay McCarthy" "jaymcc" "jay@cs.byu.edu")
+            ("Eric Mercer" #f "egm@cs.byu.edu")
+            ("Bryan Morse" #f "morse@cs.byu.edu")
+            ("Dennis Ng" #f "ng@cs.byu.edu")
+            ("Dan Olsen" #f "olsen@cs.byu.edu")
+            ("Eric Ringger" #f "ringger@cs.byu.edu")
+            ("Ken Rodham" #f "rodham@cs.byu.edu")
+            ("Paul Roper" #f "proper@cs.byu.edu")
+            ("Kent Seamons" #f "seamons@cs.byu.edu")
+            ("Tom Sederberg" #f "tom@cs.byu.edu")
+            ("Kevin Seppi" #f "kseppi@byu.edu")
+            ("Quinn Snell" #f "snell@cs.byu.edu")
+            ("Dan Ventura" #f "ventura@cs.byu.edu")
+            ("Sean Warnick" #f "sean@cs.byu.edu")
+            ("Philip Windley" #f "windley@cs.byu.edu")
+            ("Scott Woodfield" #f "woodfiel@cs.byu.edu")
+            ("Daniel Zappala" #f "zappala@cs.byu.edu")))])
+  (match-define (list n netid email) n*netid*email)
   (make-faculty #:name n))
 
 (for ([a (applicants)])
