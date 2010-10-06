@@ -224,7 +224,7 @@
 (define top-field-ids
   '(decision last-name first-name raw-gre gre-verbal gre-verbal% gre-quant gre-quant% gre-anal gre-anal% cum-gpa major-gpa codes))
 (define field->field-name
-  #hasheq([decision . "Votes"]
+  #hasheq([decision . "Decisions"]
           [last-name . "Last Name"]
           [first-name . "First Name"]
           [raw-gre . "Raw GRE"]
@@ -595,7 +595,8 @@
 
 (define (current-user-has-decided? a)
   (for/or ([(vote who) (in-hash (applicant-vote->who a))])
-    (ormap (curry string=? (current-user)) who)))
+    (and (not (symbol=? 'Undecided vote))
+         (ormap (curry string=? (current-user)) who))))
 
 (define (applicant-name a)
   (format "~a ~a"
@@ -663,17 +664,16 @@
      (vector decision comment)))
   (define (handle-dec req)
     (match-define (vector decision comment) (formlet-process dec-formlet req))
-    (unless (symbol=? 'Undecided decision)
-      (push-applicant-comments!
-       a (list (cons 'who (current-user))
-               (cons 'when (19:current-time))
-               (cons 'what comment)
-               (cons 'type (vector 'decision decision))))
-      (pull-applicant-decisions!
-       a (list (cons 'who (current-user))))
-      (push-applicant-decisions! 
-       a (list (cons 'who (current-user))
-               (cons 'vote decision))))
+    (push-applicant-comments!
+     a (list (cons 'who (current-user))
+             (cons 'when (19:current-time))
+             (cons 'what comment)
+             (cons 'type (vector 'decision decision))))
+    (pull-applicant-decisions!
+     a (list (cons 'who (current-user))))
+    (push-applicant-decisions! 
+     a (list (cons 'who (current-user))
+             (cons 'vote decision)))
     (redirect-to (top-url view-app a)))
   (define has-decided?
     (current-user-has-decided? a))
@@ -815,7 +815,7 @@
                     (span ([class "who"]) ,who) " removed the tag " (span ([class "tag"]) ,tag) "." (br)
                     ,what ,(time->xexpr when))]
                [(vector 'decision decision)
-                (if has-decided?
+                (if (or (equal? who (current-user)) has-decided?)
                     `(p ([class "comment"])
                         (span ([class "who"]) ,who) " made the decision " (span ([class "decision"]) ,(symbol->string decision)) "." (br)
                         ,what ,(time->xexpr when))
