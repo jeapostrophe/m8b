@@ -2,6 +2,10 @@ html {
   overflow-y: scroll;
 }
 
+h1.error {
+    color: red;
+}
+
 a img {
  border: 0;
 }

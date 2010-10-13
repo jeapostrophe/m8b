@@ -868,19 +868,20 @@
   (for/or ([e (mongo-dict-query "faculty" (list (cons 'name (current-user))))])
     e))
 
-(define (login req)
+(require (planet jaymccarthy/ldap))
+(define (authenticate-netid u p)
+  (ldap-authenticate "ldap.byu.edu" 389 (format "uid=~a,ou=People,o=BYU.edu" u) p))
+
+(define (login req [last-error #f])
   ; XXX look nice
   (define login-formlet
     (formlet
-     (div
-      (span "Name:" 
-            ,{(select-input
-               (faculty)
-               #:display faculty-name)
-              . => . who})
-      (span "Password:" 
-            ,{(to-string (required (password-input))) . => . passwd}))
-     (values who passwd)))
+     (table
+      (tr (td "NetID:")
+          (td  ,{(to-string (required (text-input))) . => . netid}))
+      (tr (td "NetID Password:")
+          (td ,{(to-string (required (password-input))) . => . passwd})))
+     (values netid passwd)))
   (define log-req
     (send/suspend
      (λ (k-url)
@@ -889,19 +890,35 @@
         `(div ([id "login"])
               (form ([action ,k-url] [method "post"])
                     ,@(formlet-display login-formlet)
-                    (input ([type "submit"] [value "Log in"]))))))))
+                    (input ([type "submit"] [value "Log in"])))
+              ,@(if last-error
+                    `((h1 ([class "error"]) ,last-error))
+                    '()))))))
   (define-values 
-    (who passwd)
+    (netid passwd)
     (formlet-process login-formlet log-req))
   
-  (if (bytes=? m8b-key (string->bytes/utf-8 passwd))
-      (redirect-to (top-url show-root)
-                   #:headers
-                   (list
-                    (cookie->header
-                     ; XXX It is a bit wrong to use the name
-                     (make-id-cookie m8b-key (faculty-name who)))))
-      (login req)))
+  (define who
+    (or (for/or ([fac (mongo-dict-query "faculty" (hasheq 'netid netid))])
+          fac)
+        (for/or ([fac (mongo-dict-query "faculty" (hasheq 'name netid))])
+          fac)))
+  
+  (if (not who)
+      (login req "Invalid username")
+      (let ([authenticated?
+             ; If there is no netid, then use the secret key
+             (if (faculty-netid who)
+                 (authenticate-netid netid passwd)
+                 (bytes=? m8b-key (string->bytes/utf-8 passwd)))])
+        (if authenticated?
+            (redirect-to (top-url show-root)
+                         #:headers
+                         (list
+                          (cookie->header
+                           ; XXX It is a bit wrong to use the name rather than the objectid
+                           (make-id-cookie m8b-key (faculty-name who)))))
+            (login req "Invalid password")))))
 
 (define (call-with-custodian-shutdown thunk)
   (define cust (make-custodian))
