@@ -91,7 +91,9 @@
 
 (define-mongo-struct
   faculty "faculty"
-  ([name #:required]))
+  ([name #:required]
+   [netid #:required]
+   [email #:required]))
 (define (faculty)
   (mongo-dict-query "faculty" empty))
 
