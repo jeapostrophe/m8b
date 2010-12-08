@@ -823,7 +823,8 @@
                     (span ([class "who"]) ,who) " removed the tag " (span ([class "tag"]) ,tag) "." (br)
                     ,what ,(time->xexpr when))]
                [(vector 'decision decision)
-                (if (or (equal? who (current-user)) has-decided?)
+                (if (or (equal? who (current-user)) has-decided?
+                        (fake-account? (current-user)))
                     `(p ([class "comment"])
                         (span ([class "who"]) ,who) " made the decision " (span ([class "decision"]) ,(symbol->string decision)) "." (br)
                         ,what ,(time->xexpr when))
