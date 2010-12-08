@@ -18,28 +18,29 @@
 
 (define (template #:breadcrumb bc
                   . bodies)
-  `(html (head (title ,@(add-between (map car bc) " / "))
-               (script ([src "/sorttable.js"]) " ")
-               (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
-         (body 
-          (div ([class "breadcrumb"])
-               ,@(for/list ([b (in-list bc)])
-                   (match-define (cons name url) b)
-                   (if url
-                       `(span (a ([href ,url]) ,name) " / ")
-                       `(span ([class "this"]) ,name)))
-               ,(if (current-user)
-                    `(span ([id "logout"]) 
-                           ,(current-user) " | "
-                           ,@(if (next-applicant?)
-                                 (list `(a ([href ,(top-url next-app)]) "next") " | ")
-                                 empty)
-                           (a ([href ,(top-url archive)]) "archive") " | "
-                           (a ([href ,(top-url logout)]) "logout"))
-                    ""))
-          (div ([class "content"])
-               ,@bodies
-               ,(footer)))))
+  (response/xexpr
+   `(html (head (title ,@(add-between (map car bc) " / "))
+                (script ([src "/sorttable.js"]) " ")
+                (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
+          (body 
+           (div ([class "breadcrumb"])
+                ,@(for/list ([b (in-list bc)])
+                    (match-define (cons name url) b)
+                    (if url
+                        `(span (a ([href ,url]) ,name) " / ")
+                        `(span ([class "this"]) ,name)))
+                ,(if (current-user)
+                     `(span ([id "logout"]) 
+                            ,(current-user) " | "
+                            ,@(if (next-applicant?)
+                                  (list `(a ([href ,(top-url next-app)]) "next") " | ")
+                                  empty)
+                            (a ([href ,(top-url archive)]) "archive") " | "
+                            (a ([href ,(top-url logout)]) "logout"))
+                     ""))
+           (div ([class "content"])
+                ,@bodies
+                ,(footer))))))
 
 (define (tabs header . the-tabs)
   (define found-selected? #f)
@@ -589,7 +590,7 @@
     (selector a))
   (define file
     (make-mongo-dict "files" file-obj-id))
-  (make-response/full
+  (response/full
    200 #"Okay"
    (19:time-second (file-uploaded file)) #"application/pdf"
    empty
