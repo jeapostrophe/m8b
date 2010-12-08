@@ -552,6 +552,9 @@
 
 (define (admin-mode?)
   (string=? "ADMIN" (current-user)))
+(define (fake-account? u)
+  (or (string=? "ADMIN" u)
+      (string=? "COMMITTEE" u)))
 
 (define (show-root req)
   (if (admin-mode?)
@@ -624,7 +627,9 @@
     (define n (faculty-name f))
     (seq-member? n original-tags))
   (define-values (tagged not-tagged)
-    (sequence-partition applicant-tagged-with? (faculty)))
+    (partition applicant-tagged-with? 
+               (filter-not (compose fake-account? faculty-name)
+                           (for/list ([f (faculty)]) f))))
   (define comment-formlet
     (formlet 
      ,{(to-string (required (textarea-input))) . => . comment}
