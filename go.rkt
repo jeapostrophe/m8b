@@ -212,6 +212,12 @@
     [else
      `(([class "verylow"]) ,@vs)]))
 
+(define (applicant-final-decision a)
+  (for/or ([d (applicant-decisions a)])
+    (and (string=? "COMMITTEE" (hash-ref d 'who))
+         (not (eq? (hash-ref d 'vote) 'Undecided))
+         `((strong ,(symbol->string (hash-ref d 'vote)))))))
+
 (define possible-votes '(PhD MS Provisional Reject))
 (define (vote->who->xexpr-forest vote->who)
   (for/list ([v (in-list possible-votes)])
@@ -249,10 +255,13 @@
   (curry number-field/limits->xexpr-forest applicant-major-gpa 3.5 3.25))
 (define field->applicant-field-xexpr
   (make-hasheq
-   (list (cons 'decision (compose vote->who->xexpr-forest 
-                                  (λ (a) (if (current-user-has-decided? a)
-                                             (applicant-vote->who a)
-                                             (hasheq)))))
+   (list (cons 'decision 
+               (λ (a)
+                 (or (applicant-final-decision a)
+                     (vote->who->xexpr-forest 
+                      (if (current-user-has-decided? a)
+                          (applicant-vote->who a)
+                          (hasheq))))))
          (cons 'last-name (compose string->xexpr-forest applicant-last-name))
          (cons 'first-name (compose string->xexpr-forest applicant-first-name))
          (cons 'raw-gre (compose number->xexpr-forest applicant-raw-gre))
@@ -288,21 +297,21 @@
               (tbody
                ,@rows))))
 
-(define (applicants-tagged-for user #:tagged? [tagged? #t] #:decided? [decided? bson-null])
-  (mongo-dict-query 
-   "applicants" 
-   (append 
-    (if (bson-null? decided?)
-        empty
-        (list (cons 'decisions 
-                    (let ([m (list (cons '$elemMatch
-                                         (list (cons 'who user))))])
-                      (if decided?
-                          m
-                          (list (cons '$not m)))))))
-    (if tagged?
-        (list (cons 'tags (list (cons '$in (vector user)))))
-        empty))))
+(define (applicants-tagged-for user #:tagged? [tagged? #t] #:decided? decided?)
+  (define ans
+    (mongo-dict-query 
+     "applicants" 
+     (if tagged?
+         (list (cons 'tags (list (cons '$in (vector user)))))
+         empty)))
+  (for/list ([a ans]
+             #:when
+             (let* ([non-undecided?
+                     (for/or ([d (in-vector (applicant-decisions a))]
+                              #:when (equal? user (hash-ref d 'who)))
+                       (not (eq? 'Undecided (hash-ref d 'vote))))])
+               (eq? decided? non-undecided?)))
+    a))
 
 (define (applicants/decided? user #:decided? decided?)
   (applicants-tagged-for user #:tagged? #f #:decided? decided?))
@@ -795,7 +804,8 @@
    
    `(h3 "Decisions")
    (local [(define votes (applicant-vote->who a))]
-     (if has-decided?
+     (if (or has-decided?
+             (fake-account? (current-user)))
          (apply data-table
                 (for/list ([(vote who) (in-hash votes)])
                   (list (symbol->string vote)
