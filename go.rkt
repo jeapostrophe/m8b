@@ -353,16 +353,20 @@
 
 (require web-server/formlets/lib)
 
-; XXX return
 (define (required-string def)
-  (text-input #:value (if (bson-null? def)
-                          #f
-                          (string->bytes/utf-8 def))))
-; XXX return
+  (to-string
+   (required
+    (text-input 
+     #:value (if (bson-null? def)
+                 #f (string->bytes/utf-8 def))))))
 (define (optional-string def)
-  (text-input #:value (if (bson-null? def)
-                          #f
-                          (string->bytes/utf-8 def))))
+  (cross (pure (λ (b)
+                 (if (binding:form? b)
+                     (bytes->string/utf-8 (binding:form-value b))
+                     bson-null)))                 
+         (text-input #:value (if (bson-null? def)
+                                 #f
+                                 (string->bytes/utf-8 def)))))
 ; XXX return
 (define (optional-boolean def)
   (cross (pure (λ (x) 
