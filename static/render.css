@@ -227,6 +227,10 @@ table.appform th {
     float: right;
 }
 
+.version {
+    font-size: 70%;
+    }
+
 /* Old stuff */
 
 .content {

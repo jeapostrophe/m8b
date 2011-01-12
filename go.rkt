@@ -202,7 +202,11 @@
   (define limit
     (case (applicant-degree-sought a)
       [(phd) phd]
-      [(ms) ms]))
+      [(ms) ms]
+      [else
+       (error 'number-field/limits->xexpr-forest 
+              "Applicant ~a has crazy degree sought: ~a"
+              a (applicant-degree-sought a))]))
   (define vs (number->xexpr-forest v))
   (cond
     [(or (bson-null? v) (v . > . limit))
@@ -367,35 +371,57 @@
          (text-input #:value (if (bson-null? def)
                                  #f
                                  (string->bytes/utf-8 def)))))
-; XXX return
 (define (optional-boolean def)
   (cross (pure (λ (x) 
-                 (if (binding:form? x)
-                     (bytes=? #"on" (binding:form-value x))
-                     bson-null)))
+                 (and (binding:form? x)
+                      (not (bytes=? #"off" (binding:form-value x))))))
          (checkbox #"" 
                    (if (bson-null? def)
                        #f def))))
-; XXX use def / return / display
 (define (optional-date def)
-  input-string)
-; XXX return / enforce
+  (cross (pure (λ (x) 
+                 (if (binding:form? x)
+                     (string->time
+                      (bytes->string/utf-8 (binding:form-value x)))
+                     def)))
+         (text-input #:value (if (bson-null? def)
+                                 #f
+                                 (string->bytes/utf-8 (time->string def))))))
 (define (optional-number-in-range def min max)
-  (text-input #:value (if (bson-null? def)
-                          #f
-                          (string->bytes/utf-8 (number->string def)))))
-; XXX return
-(define (optional-from def . opts)
+  (cross 
+   (pure (λ (x)
+           (or (and (bytes? x) 
+                    (let ([n (string->number (bytes->string/utf-8 x))])
+                      (and (number? n)
+                           (<= min n max)
+                           n)))
+               bson-null)))
+   (required
+    (text-input #:value (if (bson-null? def)
+                            #f
+                            (string->bytes/utf-8 (number->string def)))))))
+(define (sym-from def . opts)
   (select-input opts
                 #:selected? (λ (x) (eq? def x))
                 #:display symbol->string))
-; XXX return / display / enforce
-(define (optional-file def accepted)
+(define (optional-file def-id accepted)
+  (define def
+    (if (bson-null? def-id)
+        bson-null
+        (make-mongo-dict "files" def-id)))
   (cross (pure (λ (x) 
                  (if (binding:file? x)
-                     x
-                     bson-null)))
-         (make-input (λ (n) `(input ([type "file"] [name ,n] [accept ,accepted]))))))
+                     (mongo-dict-id 
+                      (make-file #:uploaded (19:current-time)
+                                 #:bytes (binding:file-content x)))
+                     def-id)))
+         (make-input (λ (n) `(input ([type "file"] [name ,n] [accept ,accepted])
+                                    (span ([class "version"])
+                                     ,(if (bson-null? def)
+                                          "No existing version"
+                                          (format "Last version uploaded on ~a"
+                                                  (19:date->string 
+                                                   (19:time-utc->date (file-uploaded def)))))))))))
 
 (define (applicant/default f v)
   (if v
@@ -409,17 +435,41 @@
                     (map (curry format-id #'applicant? "set-applicant-~a!")
                          (syntax->list #'(f ...)))])
        (syntax/loc stx
-         (begin (set-applicant-f! a f)
+         (begin (begin 
+                  (printf "~v\n" `(set-applicant-f! a ,f))
+                  (set-applicant-f! a f))
                 ...)))]))
 
 (define (edit-application-form k-url embed/url a)
-  ; XXX
-  (define toefl:kind bson-null)
-  (define toefl:date bson-null)
-  (define toefl:reading bson-null)
-  (define toefl:listening bson-null)
-  (define toefl:writing bson-null)
-  (define toefl:speaking/structure bson-null)
+  (define toefl:t 
+    (if a (applicant-toefl a)
+        bson-null))
+  (define (hash-ref** h k)
+    (if (bson-null? h)
+        bson-null
+        (hash-ref h k bson-null)))
+  (define toefl:kind (hash-ref** toefl:t 'kind))
+  (define toefl:date (hash-ref** toefl:t 'date))
+  (define toefl:reading 
+    (match toefl:kind
+      [(? bson-null?) bson-null]
+      ['None bson-null]
+      ['IBT (hash-ref** toefl:t 'read)]
+      ['PBT (hash-ref** toefl:t 'reading)]))
+  (define toefl:listening 
+    (hash-ref** toefl:t 'listen))
+  (define toefl:writing
+    (match toefl:kind
+      [(? bson-null?) bson-null]
+      ['None bson-null]
+      ['IBT (hash-ref** toefl:t 'write)]
+      ['PBT (hash-ref** toefl:t 'writing)]))
+  (define toefl:speaking/structure 
+    (match toefl:kind
+      [(? bson-null?) bson-null]
+      ['None bson-null]
+      ['IBT (hash-ref** toefl:t 'speak)]
+      ['PBT (hash-ref** toefl:t 'structure)]))
   
   (define the-formlet
     (formlet
@@ -441,7 +491,7 @@
             (tr (th ([colspan "3"]) "Does the student need financial aid?")
                 (td ,{(optional-boolean (applicant/default applicant-financial-aid? a)) . => . financial-aid?}))
             (tr (th ([colspan "3"]) "What degree is the applicant seeking?")      
-                (td ,{(optional-from (applicant/default applicant-degree-sought a) 'PhD 'MS) . => . degree-sought}))
+                (td ,{(sym-from (applicant/default applicant-degree-sought a) 'phd 'ms) . => . degree-sought}))
             (tr (th ([colspan "2"]) "Citizenship")
                 (td ([colspan "2"]) ,{(optional-string (applicant/default applicant-citizenship a)) . => . citizenship}))
             
@@ -464,7 +514,7 @@
             
             (tr (td ([colspan "4"]) nbsp))
            
-            (tr (th "TOEFL") (td ,{(optional-from toefl:kind 'None 'IBT 'PBT) . => . toefl:kind})
+            (tr (th "TOEFL") (td ,{(sym-from toefl:kind 'None 'IBT 'PBT) . => . toefl:kind})
                 (th "Date") (td ,{(optional-date toefl:date) . => . toefl:date}))
             (tr (th "Reading") (td ,{(optional-number-in-range toefl:reading 0 100) . => . toefl:reading})
                 (th "Listening") (td ,{(optional-number-in-range toefl:listening 0 100) . => . toefl:listening}))
@@ -486,6 +536,7 @@
                 a
                 (make-applicant #:first-name first-name
                                 #:last-name last-name
+                                #:degree-sought degree-sought
                                 #:comments (vector)
                                 #:tags (vector)
                                 #:decisions (vector)))])
@@ -540,7 +591,7 @@
        (render-applicant-table (applicants)
                                #:editing? #t)
        "Manage Faculty Accounts"
-       "XXX")))))
+       "XXX Incomplete, soweee :)")))))
 
 (define (edit-app req a)
   (define name
@@ -926,7 +977,7 @@
           fac)))
   
   (if (not who)
-      (login req "Invalid username")
+      (login req (format "Invalid username (~S)" netid))
       (let ([authenticated?
              ; If there is no netid, then use the secret key
              (if (faculty-netid who)
@@ -939,7 +990,7 @@
                           (cookie->header
                            ; XXX It is a bit wrong to use the name rather than the objectid
                            (make-id-cookie m8b-key (faculty-name who)))))
-            (login req "Invalid password")))))
+            (login req (format "Invalid password for user (~S)" netid))))))
 
 (define (call-with-custodian-shutdown thunk)
   (define cust (make-custodian))

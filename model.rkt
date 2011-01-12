@@ -64,6 +64,13 @@
   (null+ (applicant-gre-verbal-score a)
          (applicant-gre-quant-score a)))
 
+(define (string->time x)
+  (with-handlers ([exn:fail? (lambda (x) bson-null)])
+    (19:date->time-utc
+     (19:string->date (string-append x "-01") "~Y-~m-~d"))))
+(define (time->string x)
+  (19:date->string (19:time-utc->date x) "~Y-~m"))
+
 (define-syntax (id-list stx)
   (syntax-case stx ()
     [(_ base suf ...)

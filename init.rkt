@@ -69,10 +69,7 @@
             #:gre-quant-score (string->number* GRE_Q)
             #:gre-verbal-percentile (parse% GRE_VP)
             #:gre-verbal-score (string->number* GRE_V)
-            #:gre-date 
-            (with-handlers ([exn:fail? (lambda (x) bson-null)])
-              (19:date->time-utc
-               (19:string->date (string-append GREDate "-01") "~b-~y-~d")))
+            #:gre-date (string->time GREDate)
             #:toefl 
             (if (ormap string-empty? (list TOEFL-Kind TOEFL-Date TOEFL-Read TOEFL-Listen TOEFL-Speaking TOEFL-Writing))
                 bson-null
