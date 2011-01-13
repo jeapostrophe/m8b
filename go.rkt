@@ -385,7 +385,7 @@
                       (bytes->string/utf-8 (binding:form-value x)))
                      def)))
          (text-input #:value (if (bson-null? def)
-                                 #f
+                                 #"YYYY-MM"
                                  (string->bytes/utf-8 (time->string def))))))
 (define (optional-number-in-range def min max)
   (cross 
