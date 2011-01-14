@@ -1,9 +1,5 @@
 #lang racket
 (require "model.rkt"
-         racket/date
-         racket/runtime-path
-         (prefix-in 19: srfi/19)
-         (planet neil/csv)
          (planet jaymccarthy/mongodb))
 
 (call-with-model

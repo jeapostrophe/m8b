@@ -1025,7 +1025,7 @@
                #:port 9000
                #:listen-ip #f
                #:quit? #f
-               #:launch-browser? #t
+               #:launch-browser? #f
                #:servlet-regexp #rx""
                #:servlet-path "/"
                #:ssl-cert server-cert
