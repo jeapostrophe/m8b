@@ -209,9 +209,9 @@
               a (applicant-degree-sought a))]))
   (define vs (number->xexpr-forest v))
   (cond
-    [(or (bson-null? v) (v . > . limit))
+    [(or (bson-null? v) (v . >= . limit))
      vs]
-    [(v . > . (* .9 limit))
+    [(v . >= . (* .9 limit))
      `(([class "low"]) ,@vs)]
     [else
      `(([class "verylow"]) ,@vs)]))
