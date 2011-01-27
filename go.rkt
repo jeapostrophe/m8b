@@ -409,19 +409,23 @@
     (if (bson-null? def-id)
         bson-null
         (make-mongo-dict "files" def-id)))
-  (cross (pure (λ (x) 
-                 (if (binding:file? x)
+  (cross (pure (λ (x)
+                 ; XXX
+                 (printf "Got ~v\n" x)
+                 (if (and (binding:file? x)
+                          (not (zero? (bytes-length (binding:file-content x)))))
                      (mongo-dict-id 
                       (make-file #:uploaded (19:current-time)
                                  #:bytes (binding:file-content x)))
-                     def-id)))
+                     ; XXX
+                     (begin (printf "Empty\n") def-id))))
          (make-input (λ (n) `(input ([type "file"] [name ,n] [accept ,accepted])
                                     (span ([class "version"])
-                                     ,(if (bson-null? def)
-                                          "No existing version"
-                                          (format "Last version uploaded on ~a"
-                                                  (19:date->string 
-                                                   (19:time-utc->date (file-uploaded def)))))))))))
+                                          ,(if (bson-null? def)
+                                               "No existing version"
+                                               (format "Last version uploaded on ~a"
+                                                       (19:date->string 
+                                                        (19:time-utc->date (file-uploaded def)))))))))))
 
 (define (applicant/default f v)
   (if v
@@ -436,6 +440,7 @@
                          (syntax->list #'(f ...)))])
        (syntax/loc stx
          (begin (begin 
+                  ; XXX
                   (printf "~v\n" `(set-applicant-f! a ,f))
                   (set-applicant-f! a f))
                 ...)))]))
@@ -513,7 +518,7 @@
                 (td ,{(optional-number-in-range (applicant/default applicant-gre-analytic-percentile a) 0 99) . => . gre-analytic-percentile}))
             
             (tr (td ([colspan "4"]) nbsp))
-           
+            
             (tr (th "TOEFL") (td ,{(sym-from toefl:kind 'None 'IBT 'PBT) . => . toefl:kind})
                 (th "Date") (td ,{(optional-date toefl:date) . => . toefl:date}))
             (tr (th "Reading") (td ,{(optional-number-in-range toefl:reading 0 100) . => . toefl:reading})
@@ -522,7 +527,7 @@
                 (th "Speaking/Structure") (td ,{(optional-number-in-range toefl:speaking/structure 0 100) . => . toefl:speaking/structure}))
             
             (tr (td ([colspan "4"]) nbsp))
-
+            
             (tr (th ([colspan "2"]) "Application")
                 (td ([colspan "2"]) ,{(optional-file (applicant/default applicant-pdf-application a) "application/pdf") . => . pdf-application}))
             (tr (th ([colspan "2"]) "Reference Letters")
@@ -574,7 +579,7 @@
     (formlet-process the-formlet req)
     (redirect-to k-url))
   
-  `(form ([action ,(embed/url submit-handler)] [method "post"])
+  `(form ([action ,(embed/url submit-handler)] [method "post"] [enctype "multipart/form-data"])
          ,@(formlet-display the-formlet)))
 
 (define (render-admin)
@@ -702,8 +707,8 @@
     (formlet
      (#%#
       ,{(select-input facs #:display faculty-name)
-        . => .
-        tag}
+  . => .
+tag}
       (br)
       ,{comment-formlet . => . comment})
      (vector tag comment)))
@@ -729,8 +734,8 @@
       ,{(select-input (list* 'Undecided possible-votes)
                       #:selected? (curry eq? (applicant-faculty-decision a (current-user-obj)))
                       #:display symbol->string)
-        . => .
-        decision}
+  . => .
+decision}
       (br)
       ,{comment-formlet . => . comment})
      (vector decision comment)))
@@ -998,7 +1003,7 @@
                 thunk
                 (λ ()
                   (custodian-shutdown-all cust))))
-  
+
 (define (login-then-top-dispatch req)
   (printf "[~a] ~a\n" (current-seconds) (url->string (request-uri req)))
   (call-with-custodian-shutdown
