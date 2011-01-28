@@ -589,12 +589,12 @@
       #:breadcrumb (list (cons "Applicants (admin)" #f))
       (tabs 
        ""
-       "New Applicant"
-       `(div ([id "add"])
-             ,(edit-application-form (top-url show-root) embed/url #f))
        "All Applicants"
        (render-applicant-table (applicants)
                                #:editing? #t)
+       "New Applicant"
+       `(div ([id "add"])
+             ,(edit-application-form (top-url show-root) embed/url #f))
        "Manage Faculty Accounts"
        "XXX Incomplete, soweee :)")))))
 

@@ -81,15 +81,15 @@
 
 (define (applicant-complete? a)
   (empty? 
-   (ormap (compose bson-null? (lambda (f) (f a)))
-          (id-list applicant-
-                   citizenship lds? financial-aid? 
-                   gre-date 
-                   gre-verbal-score gre-verbal-percentile
-                   gre-quant-score gre-quant-percentile
-                   gre-analytic-score gre-analytic-percentile
-                   prior-school cumulative-gpa major-gpa degree degree-sought
-                   pdf-application pdf-letters pdf-transcript))))
+   (filter (compose bson-null? (lambda (f) (f a)))
+           (id-list applicant-
+                    citizenship lds? financial-aid? 
+                    gre-date 
+                    gre-verbal-score gre-verbal-percentile
+                    gre-quant-score gre-quant-percentile
+                    gre-analytic-score gre-analytic-percentile
+                    prior-school cumulative-gpa major-gpa degree degree-sought
+                    pdf-application pdf-letters pdf-transcript))))
 
 ; XXX [toefl-okay? (symbols 'waived 'cleared 'not-cleared)]
 
