@@ -410,14 +410,15 @@
         bson-null
         (make-mongo-dict "files" def-id)))
   (cross (pure (λ (x)
-                 ; XXX
                  (printf "Got ~v\n" x)
                  (if (and (binding:file? x)
                           (not (zero? (bytes-length (binding:file-content x)))))
-                     (mongo-dict-id 
-                      (make-file #:uploaded (19:current-time)
-                                 #:bytes (binding:file-content x)))
-                     ; XXX
+                     (let ([uid
+                            (mongo-dict-id 
+                             (make-file #:uploaded (19:current-time)
+                                        #:bytes (binding:file-content x)))])
+                       (printf "New ID is ~v\n" uid)
+                       uid)
                      (begin (printf "Empty\n") def-id))))
          (make-input (λ (n) `(input ([type "file"] [name ,n] [accept ,accepted])
                                     (span ([class "version"])
@@ -534,6 +535,8 @@
                 (td ([colspan "2"]) ,{(optional-file (applicant/default applicant-pdf-letters a) "application/pdf") . => . pdf-letters}))
             (tr (th ([colspan "2"]) "Transcript")
                 (td ([colspan "2"]) ,{(optional-file (applicant/default applicant-pdf-transcript a) "application/pdf") . => . pdf-transcript}))
+            (tr (th ([colspan "4"]) "Note: Files limited to 4MB. Larger files will silently fail."))
+            
             (tr (td ([colspan "4"]) nbsp))
             (tr (td ([colspan "4"] [align "center"]) (input ([type "submit"])))))
      (let ([a
@@ -660,6 +663,7 @@
       ["Transcripts.pdf" applicant-pdf-transcript]))
   (define file-obj-id
     (selector a))
+  (printf "Get uid: ~v\n" file-obj-id)
   (define file
     (make-mongo-dict "files" file-obj-id))
   (response/full
@@ -812,6 +816,7 @@ decision}
               (define write (hash-ref toefl 'write))
               (define listen (hash-ref toefl 'listen))
               (define speak (hash-ref toefl 'speak))
+              ; XXX null+
               (define total (+ read write listen speak))
               (list "Total" (number->string total)
                     "Reading" (number->string read)
@@ -823,6 +828,7 @@ decision}
               (define structure (hash-ref toefl 'structure))
               (define reading (hash-ref toefl 'reading))
               (define writing (hash-ref toefl 'writing))
+              ; XXX null+
               (define total (+ listen structure reading))
               (list "Total" (number->string total)
                     "Listening" (number->string listen)
