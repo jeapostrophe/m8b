@@ -222,7 +222,7 @@
          (not (eq? (hash-ref d 'vote) 'Undecided))
          `((strong ,(symbol->string (hash-ref d 'vote)))))))
 
-(define possible-votes '(PhD MS Provisional Reject))
+(define possible-votes '(PhD MS Provisional Reject Borderline))
 (define (vote->who->xexpr-forest vote->who)
   (for/list ([v (in-list possible-votes)])
     `(span ([class ,(format "dec-~a" v)]
