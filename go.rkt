@@ -263,7 +263,8 @@
                (λ (a)
                  (or (applicant-final-decision a)
                      (vote->who->xexpr-forest 
-                      (if (current-user-has-decided? a)
+                      (if (or (current-user-has-decided? a)
+                              (fake-account? (current-user)))
                           (applicant-vote->who a)
                           (hasheq))))))
          (cons 'last-name (compose string->xexpr-forest applicant-last-name))
