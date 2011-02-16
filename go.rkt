@@ -36,7 +36,6 @@
                                   (list `(a ([href ,(top-url next-app)]) "next") " | ")
                                   empty)
                             (a ([href ,(top-url archive)]) "archive") " | "
-                            (a ([href ,(top-url spreadsheet)]) "spreadsheet") " | "
                             (a ([href ,(top-url logout)]) "logout"))
                      ""))
            (div ([class "content"])
@@ -935,20 +934,11 @@ decision}
              `(h1 ,(applicant-name a))
              (view-app-body a #f))))))
 
-(define (spreadsheet req)
-  (response
-   200 #"Okay"
-   (current-seconds) #"text/plain"
-   empty
-   (λ (op)
-     XXX)))
-
 (define-values (top-dispatch top-url top-applies?)
   (dispatch-rules+applies
    [("") show-root]
    [("logout") logout]
    [("archive") archive]
-   [("spreadsheet") spreadsheet]
    [("next") next-app]
    [("edit" (mongo-dict-arg "applicants")) edit-app]
    [("app" (mongo-dict-arg "applicants")) view-app]
