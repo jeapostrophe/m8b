@@ -4,7 +4,7 @@ mkdir root
 bash run.sh &
 PID=$!
 sleep 1
-mzscheme -t init.ss
+../racket/bin/racket -t init.rkt
 sleep 1
 kill $PID
 wait $PID
