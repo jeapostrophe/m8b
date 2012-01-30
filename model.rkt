@@ -38,6 +38,8 @@
    [degree]
    [degree-sought #:required]
    [toefl]
+   [research-area]
+   [advisor]
    ; Files
    [pdf-application] ; apple-script / button_delete_green
    [pdf-letters] ; document_blank / button_delete_blue

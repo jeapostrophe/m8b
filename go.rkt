@@ -233,7 +233,7 @@
                 (hash-ref vote->who v)))))))
 
 (define top-field-ids
-  '(decision last-name first-name raw-gre gre-verbal gre-verbal% gre-quant gre-quant% gre-anal gre-anal% cum-gpa major-gpa codes))
+  '(decision last-name first-name raw-gre gre-verbal gre-verbal% gre-quant gre-quant% gre-anal gre-anal% cum-gpa codes))
 (define field->field-name
   #hasheq([decision . "Decisions"]
           [last-name . "Last Name"]
@@ -248,6 +248,8 @@
           [gre-anal% . "%"]
           [cum-gpa . "Cum. GPA"]
           [major-gpa . "Major GPA"]
+          [research-area . "Research Area"]
+          [advisor . "Advisor"]
           [codes . ""]))
 (define gre-verbal->xexpr-forest
   (curry number-field/limits->xexpr-forest applicant-gre-verbal-score 575 530))
@@ -278,7 +280,6 @@
          (cons 'gre-anal gre-anal->xexpr-forest)
          (cons 'gre-anal% (compose number->xexpr-forest applicant-gre-analytic-percentile))
          (cons 'cum-gpa (compose number->xexpr-forest applicant-cumulative-gpa))
-         (cons 'major-gpa major-gpa->xexpr-forest)
          (cons 'codes (compose code-set->xexpr-forest applicant-codes)))))
 
 (define (render-applicant-table applicants-seq #:editing? [editing? #f])
@@ -489,10 +490,14 @@
                 (td ,{(optional-string (applicant/default applicant-prior-school a)) . => . prior-school})
                 (th "Prior Degree")
                 (td ,{(optional-string (applicant/default applicant-degree a)) . => . degree}))
+            (tr (th "Research Area")
+                (td ,{(optional-string (applicant/default applicant-research-area a)) . => . research-area})
+                (th "Advisor")
+                (td ,{(optional-string (applicant/default applicant-advisor a)) . => . advisor}))
             (tr (th "Cumulative GPA")
                 (td ,{(optional-number-in-range (applicant/default applicant-cumulative-gpa a) 0 4) . => . cumulative-gpa})
-                (th "Major GPA")
-                (td ,{(optional-number-in-range (applicant/default applicant-major-gpa a) 0 4) . => . major-gpa}))
+                #;(th "Major GPA")
+                #;(td ,{(optional-number-in-range (applicant/default applicant-major-gpa a) 0 4) . => . major-gpa}))
             (tr (th ([colspan "3"]) "Is the student LDS?")
                 (td ,{(optional-boolean (applicant/default applicant-lds? a)) . => . lds?}))
             (tr (th ([colspan "3"]) "Does the student need financial aid?")
@@ -570,7 +575,7 @@
        
        (applicant-set! a 
                        first-name last-name prior-school
-                       degree cumulative-gpa major-gpa
+                       degree cumulative-gpa research-area advisor
                        lds? financial-aid? degree-sought
                        citizenship gre-date
                        gre-verbal-percentile gre-verbal-score
@@ -790,11 +795,15 @@ decision}
      "Prior School" (applicant-prior-school a))
     (list
      "Degree" (applicant-degree a))
-    
+
+    (list
+     "Research Area" (applicant-research-area a))
+    (list
+     "Advisor" (applicant-advisor a))
     
     (list
      "Cumulative GPA" (number->xexpr (applicant-cumulative-gpa a))
-     "Major GPA" `(span ,@(major-gpa->xexpr-forest a)))
+     #;"Major GPA" #;`(span ,@(major-gpa->xexpr-forest a)))
     
     (list
      "GRE" (date->xexpr (applicant-gre-date a))
