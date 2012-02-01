@@ -797,9 +797,9 @@ decision}
      "Degree" (applicant-degree a))
 
     (list
-     "Research Area" (applicant-research-area a))
+     "Research Area" (applicant-research-area* a))
     (list
-     "Advisor" (applicant-advisor a))
+     "Advisor" (applicant-advisor* a))
     
     (list
      "Cumulative GPA" (number->xexpr (applicant-cumulative-gpa a))

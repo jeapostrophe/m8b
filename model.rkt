@@ -73,6 +73,15 @@
 (define (time->string x)
   (19:date->string (19:time-utc->date x) "~Y-~m"))
 
+(define (bson-default x def)
+  (if (bson-null? x)
+      def
+      x))
+(define (applicant-research-area* a)
+  (bson-default (applicant-research-area a) ""))
+(define (applicant-advisor* a)
+  (bson-default (applicant-advisor a) ""))
+
 (define-syntax (id-list stx)
   (syntax-case stx ()
     [(_ base suf ...)
@@ -90,7 +99,7 @@
                     gre-verbal-score gre-verbal-percentile
                     gre-quant-score gre-quant-percentile
                     gre-analytic-score gre-analytic-percentile
-                    prior-school cumulative-gpa major-gpa degree degree-sought
+                    prior-school cumulative-gpa degree degree-sought
                     pdf-application pdf-letters pdf-transcript))))
 
 ; XXX [toefl-okay? (symbols 'waived 'cleared 'not-cleared)]
