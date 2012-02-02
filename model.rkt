@@ -1,7 +1,8 @@
 #lang racket
 (require (prefix-in 19: srfi/19)
          (planet jaymccarthy/mongodb)
-         (for-syntax unstable/syntax))
+         (for-syntax unstable/syntax
+                     racket/syntax))
 
 (define (call-with-model thunk)
   (define mongo-server #f)
