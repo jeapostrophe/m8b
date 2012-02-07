@@ -135,9 +135,9 @@
           ...))  
 (define (applicant-codes a)
   (list-cond
-   [(symbol=? 'phd (applicant-degree-sought a))
+   [(symbol=? 'phd (applicant-degree-sought* a))
     (make-code "P" "PhD applicant" #f)]
-   [(symbol=? 'ms (applicant-degree-sought a)) 
+   [(symbol=? 'ms (applicant-degree-sought* a)) 
     (make-code "M" "MS applicant" #f)]
    [(not (applicant-complete? a))
     (make-code "I" "Incomplete Application" #f)]
@@ -197,17 +197,21 @@
   (list
    (case d
      [(phd) "PhD"]
-     [(ms) "MS"])))
+     [(ms) "MS"]
+     [(missing) "Missing"])))
+
+;; number-field/limits->xexpr-forest : (applicant -> value) number number applicant -> xexpr-forest
 (define (number-field/limits->xexpr-forest f phd ms a)
   (define v (f a))
   (define limit
-    (case (applicant-degree-sought a)
-      [(phd) phd]
-      [(ms) ms]
+    (match (applicant-degree-sought* a)
+      ['phd phd]
+      ['ms ms]
+      ['missing +inf.0]
       [else
        (error 'number-field/limits->xexpr-forest 
               "Applicant ~a has crazy degree sought: ~a"
-              a (applicant-degree-sought a))]))
+              a (applicant-degree-sought* a))]))
   (define vs (number->xexpr-forest v))
   (cond
     [(or (bson-null? v) (v . >= . limit))
@@ -504,7 +508,7 @@
             (tr (th ([colspan "3"]) "Does the student need financial aid?")
                 (td ,{(optional-boolean (applicant/default applicant-financial-aid? a)) . => . financial-aid?}))
             (tr (th ([colspan "3"]) "What degree is the applicant seeking?")      
-                (td ,{(sym-from (applicant/default applicant-degree-sought a) 'phd 'ms) . => . degree-sought}))
+                (td ,{(sym-from (applicant/default applicant-degree-sought* a) 'phd 'ms) . => . degree-sought}))
             (tr (th ([colspan "2"]) "Citizenship")
                 (td ([colspan "2"]) ,{(optional-string (applicant/default applicant-citizenship a)) . => . citizenship}))
             
@@ -785,7 +789,7 @@ decision}
    
    (data-table
     (list "Name" name
-          "Degree Sought" `(span ,@(degree-sought->xexpr-forest (applicant-degree-sought a))))
+          "Degree Sought" `(span ,@(degree-sought->xexpr-forest (applicant-degree-sought* a))))
     
     (list
      "Citizenship" (applicant-citizenship a)

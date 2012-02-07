@@ -82,6 +82,8 @@
   (bson-default (applicant-research-area a) ""))
 (define (applicant-advisor* a)
   (bson-default (applicant-advisor a) ""))
+(define (applicant-degree-sought* a)
+  (bson-default (applicant-degree-sought a) 'missing))
 
 (define-syntax (id-list stx)
   (syntax-case stx ()

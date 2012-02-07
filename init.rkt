@@ -6,9 +6,9 @@
          (planet jaymccarthy/mongodb))
 
 ;; When you run:
-#;(require "model.rkt")
+(require "model.rkt")
 ;; When you test parsing the file:
-(begin
+#;(begin
   (define (call-with-model t) (t))
   (define-syntax (kw-quote stx)
     (syntax-case stx ()
@@ -43,8 +43,8 @@
                  (19:date->time-utc
                   (19:string->date* (string-append x "/01") "~Y/~m/~d"))))
 
-(define-runtime-path csv-path "applicants.csv")
-(define-runtime-path pdf-path "applicants")
+(define-runtime-path csv-path "/home/gradadmin/winter-2012-init-data/applicants.csv")
+(define-runtime-path pdf-path "/home/gradadmin/winter-2012-init-data/applicants")
 
 (call-with-model
  (λ ()
@@ -58,7 +58,7 @@
 
            ;; Spreadsheets are column oriented, so naturally squeeze multiple columns into one!
            (match-define (regexp #rx"^([^,]+), (.+)"
-                                 (list _ FirstName LastName))
+                                 (list _ LastName FirstName))
                          Student)
            (define parse-GRE
              (match-lambda
@@ -77,7 +77,7 @@
 
            (define (get-pdf-type type)
              (define this-pdf
-               (build-path pdf-path (format "~a~a~a.pdf" LastName FirstName type)))
+               (build-path pdf-path (format "~a~a~a.pdf" LastName (regexp-replace* #rx" " FirstName "") type)))
              (cond
               [(file-exists? this-pdf)
                (define this-pdf-bytes
@@ -86,6 +86,7 @@
                 (make-file #:uploaded (19:current-time)
                            #:bytes this-pdf-bytes))]
               [else
+               (eprintf "Didn't find PDF: ~a\n" this-pdf)
                bson-null]))
 
            (make-applicant
