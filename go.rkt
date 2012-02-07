@@ -3,6 +3,7 @@
          net/url
          web-server/http
          (for-syntax unstable/syntax
+                     racket/syntax
                      racket/function)
          (prefix-in 19: srfi/19)
          (planet jaymccarthy/mongodb)
