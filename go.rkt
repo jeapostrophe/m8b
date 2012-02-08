@@ -257,13 +257,17 @@
           [advisor . "Advisor"]
           [codes . ""]))
 (define gre-verbal->xexpr-forest
-  (curry number-field/limits->xexpr-forest applicant-gre-verbal-score 575 530))
+  #;(curry number-field/limits->xexpr-forest applicant-gre-verbal-score 575 530)
+  (curry number-field/limits->xexpr-forest applicant-gre-verbal-percentile 70 60))
 (define gre-quant->xexpr-forest
-  (curry number-field/limits->xexpr-forest applicant-gre-quant-score 750 700))
+  #;(curry number-field/limits->xexpr-forest applicant-gre-quant-score 750 700)
+  (curry number-field/limits->xexpr-forest applicant-gre-quant-percentile 80 70))
 (define gre-anal->xexpr-forest
-  (curry number-field/limits->xexpr-forest applicant-gre-analytic-score 5 4.5))
+  (curry number-field/limits->xexpr-forest applicant-gre-analytic-score 4.5 4.0))
 (define major-gpa->xexpr-forest
   (curry number-field/limits->xexpr-forest applicant-major-gpa 3.5 3.25))
+(define cum-gpa->xexpr-forest
+  (curry number-field/limits->xexpr-forest applicant-cumulative-gpa 3.5 3.25))
 (define field->applicant-field-xexpr
   (make-hasheq
    (list (cons 'decision 
@@ -278,13 +282,18 @@
          (cons 'first-name (compose string->xexpr-forest applicant-first-name))
          (cons 'raw-gre (compose number->xexpr-forest applicant-raw-gre))
          (cons 'gre-date (compose date->xexpr-forest applicant-gre-date))
-         (cons 'gre-verbal gre-verbal->xexpr-forest)
-         (cons 'gre-verbal% (compose number->xexpr-forest applicant-gre-verbal-percentile))
-         (cons 'gre-quant gre-quant->xexpr-forest)
-         (cons 'gre-quant% (compose number->xexpr-forest applicant-gre-quant-percentile))
+         #;(cons 'gre-verbal gre-verbal->xexpr-forest)
+	 (cons 'gre-verbal (compose number->xexpr-forest applicant-gre-verbal-score))
+         #;(cons 'gre-verbal% (compose number->xexpr-forest applicant-gre-verbal-percentile))
+	 (cons 'gre-verbal% gre-verbal->xexpr-forest)
+         #;(cons 'gre-quant gre-quant->xexpr-forest)
+         (cons 'gre-quant (compose number->xexpr-forest applicant-gre-quant-score))
+         #;(cons 'gre-quant% (compose number->xexpr-forest applicant-gre-quant-percentile))
+         (cons 'gre-quant% gre-quant->xexpr-forest)
          (cons 'gre-anal gre-anal->xexpr-forest)
          (cons 'gre-anal% (compose number->xexpr-forest applicant-gre-analytic-percentile))
-         (cons 'cum-gpa (compose number->xexpr-forest applicant-cumulative-gpa))
+         #;(cons 'cum-gpa (compose number->xexpr-forest applicant-cumulative-gpa))
+         (cons 'cum-gpa cum-gpa->xexpr-forest)
          (cons 'codes (compose code-set->xexpr-forest applicant-codes)))))
 
 (define (render-applicant-table applicants-seq #:editing? [editing? #f])
