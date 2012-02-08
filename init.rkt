@@ -75,9 +75,10 @@
 
            (printf "Adding ~a ~a~n" FirstName LastName)
 
+           ;; TODO: Add the check for an apostrophe to the regexp on Lastname such as O'Neill
            (define (get-pdf-type type)
              (define this-pdf
-               (build-path pdf-path (format "~a~a~a.pdf" LastName (regexp-replace* #rx" " FirstName "") type)))
+               (build-path pdf-path (format "~a~a~a.pdf" (regexp-replace* #rx" " LastName "")  (regexp-replace* #rx" " FirstName "") type)))
              (cond
               [(file-exists? this-pdf)
                (define this-pdf-bytes

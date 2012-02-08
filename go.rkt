@@ -476,6 +476,7 @@
     (match toefl:kind
       [(? bson-null?) bson-null]
       ['None bson-null]
+      ['IELTS (hash-ref** toefl:t 'read)]
       ['IBT (hash-ref** toefl:t 'read)]
       ['PBT (hash-ref** toefl:t 'reading)]))
   (define toefl:listening 
@@ -484,12 +485,14 @@
     (match toefl:kind
       [(? bson-null?) bson-null]
       ['None bson-null]
+      ['IELTS (hash-ref** toefl:t 'write)]
       ['IBT (hash-ref** toefl:t 'write)]
       ['PBT (hash-ref** toefl:t 'writing)]))
   (define toefl:speaking/structure 
     (match toefl:kind
       [(? bson-null?) bson-null]
       ['None bson-null]
+      ['IELTS (hash-ref** toefl:t 'speak)]
       ['IBT (hash-ref** toefl:t 'speak)]
       ['PBT (hash-ref** toefl:t 'structure)]))
   
@@ -540,7 +543,7 @@
             
             (tr (td ([colspan "4"]) nbsp))
             
-            (tr (th "TOEFL") (td ,{(sym-from toefl:kind 'None 'IBT 'PBT) . => . toefl:kind})
+            (tr (th "TOEFL") (td ,{(sym-from toefl:kind 'None 'IELTS 'IBT 'PBT) . => . toefl:kind})
                 (th "Date") (td ,{(optional-date toefl:date) . => . toefl:date}))
             (tr (th "Reading") (td ,{(optional-number-in-range toefl:reading 0 100) . => . toefl:reading})
                 (th "Listening") (td ,{(optional-number-in-range toefl:listening 0 100) . => . toefl:listening}))
@@ -572,6 +575,13 @@
          (match toefl:kind
            [(? bson-null?) bson-null]
            ['None bson-null]
+           ['IELTS 
+             (hasheq 'kind 'IELTS
+                     'date toefl:date
+                     'read toefl:reading
+                     'write toefl:writing
+                     'listen toefl:listening
+                     'speak toefl:speaking/structure)]
            ['IBT 
             (hasheq 'kind 'IBT
                     'date toefl:date
