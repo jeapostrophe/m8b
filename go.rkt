@@ -186,6 +186,8 @@
       ""
       (19:date->string (19:time-utc->date s) "~B ~Y")))
 
+(define (percentage->xexpr-forest n)
+  (list (percentage->xexpr n)))
 (define (number->xexpr-forest n)
   (list (number->xexpr n)))
 (define (date->xexpr-forest s)
@@ -221,6 +223,26 @@
     [else
      `(([class "verylow"]) ,@vs)]))
 
+;; percentage-field/limits->xexpr-forest : (applicant -> value) number number applicant -> xexpr-forest
+(define (percentage-field/limits->xexpr-forest f phd ms a)
+  (define v (f a))
+  (define limit
+    (match (applicant-degree-sought* a)
+      ['phd phd]
+      ['ms ms]
+      ['missing +inf.0]
+      [else
+       (error 'number-field/limits->xexpr-forest
+              "Applicant ~a has crazy degree sought: ~a"
+              a (applicant-degree-sought* a))]))
+  (define vs (percentage->xexpr-forest v))
+  (cond
+    [(or (bson-null? v) (v . >= . limit))
+     vs]
+    [(v . >= . (* .9 limit))
+     `(([class "low"]) ,@vs)]
+    [else
+     `(([class "verylow"]) ,@vs)]))
 (define (applicant-final-decision a)
   (for/or ([d (applicant-decisions a)])
     (and (string=? "COMMITTEE" (hash-ref d 'who))
@@ -258,10 +280,10 @@
           [codes . ""]))
 (define gre-verbal->xexpr-forest
   #;(curry number-field/limits->xexpr-forest applicant-gre-verbal-score 575 530)
-  (curry number-field/limits->xexpr-forest applicant-gre-verbal-percentile 70 60))
+  (curry percentage-field/limits->xexpr-forest applicant-gre-verbal-percentile 70 60))
 (define gre-quant->xexpr-forest
   #;(curry number-field/limits->xexpr-forest applicant-gre-quant-score 750 700)
-  (curry number-field/limits->xexpr-forest applicant-gre-quant-percentile 80 70))
+  (curry percentage-field/limits->xexpr-forest applicant-gre-quant-percentile 80 70))
 (define gre-anal->xexpr-forest
   (curry number-field/limits->xexpr-forest applicant-gre-analytic-score 4.5 4.0))
 (define major-gpa->xexpr-forest
@@ -832,9 +854,9 @@ decision}
     (list
      "GRE" (date->xexpr (applicant-gre-date a))
      "Verbal" `(span ,@(gre-verbal->xexpr-forest a) nbsp
-                     ,(maybe-add-parens (percentage->xexpr (applicant-gre-verbal-percentile a))))
+                     ,(maybe-add-parens (number->xexpr (applicant-gre-verbal-score a))))
      "Quantative" `(span ,@(gre-quant->xexpr-forest a) nbsp
-                         ,(maybe-add-parens (percentage->xexpr (applicant-gre-quant-percentile a))))
+                         ,(maybe-add-parens (number->xexpr (applicant-gre-quant-score a))))
      "Analytic" `(span ,@(gre-anal->xexpr-forest a) nbsp
                        ,(maybe-add-parens (percentage->xexpr (applicant-gre-analytic-percentile a)))))
     
@@ -845,6 +867,18 @@ decision}
           (list*
            "TOEFL" (date->xexpr (hash-ref toefl 'date))
            (match kind
+             ['IELTS
+              (define read (hash-ref toefl 'read))
+              (define write (hash-ref toefl 'write))
+              (define listen (hash-ref toefl 'listen))
+              (define speak (hash-ref toefl 'speak))
+              ; XXX null+
+              (define total (+ read write listen speak))
+              (list "Total" (number->string total)
+                    "Reading" (number->string read)
+                    "Listening" (number->string listen)
+                    "Speaking" (number->string speak)
+                    "Writing" (number->string write))]
              ['IBT
               (define read (hash-ref toefl 'read))
               (define write (hash-ref toefl 'write))
