@@ -1111,7 +1111,7 @@ decision}
 (require web-server/managers/lru)
 
 (serve/servlet login-then-top-dispatch
-               #:manager (make-threshold-LRU-manager #f (* 1024 512))
+               #:manager (make-threshold-LRU-manager #f (* 1024 1024 512))
                #:port 9000
                #:listen-ip #f
                #:quit? #f
