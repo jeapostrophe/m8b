@@ -1100,7 +1100,10 @@ decision}
 (define-runtime-path private-key "private-key.pem")
 (define-runtime-path server-cert "server-cert.pem")
 
+(require web-server/managers/lru)
+
 (serve/servlet login-then-top-dispatch
+               #:manager (make-threshold-LRU-manager #f (* 1024 512))
                #:port 9000
                #:listen-ip #f
                #:quit? #f
