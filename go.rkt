@@ -193,6 +193,14 @@
 (define (date->xexpr-forest s)
   (list (date->xexpr s)))
 
+(define (toefl->xexpr s)
+  (if (bson-null? s)
+      ("None")
+      (match s
+             ['IELTS "IELTS"]
+             ['IBT "IBT"]
+             ['PBT "PBT"])))
+
 (define (string->xexpr-forest s)
   (list s))
 (define (degree-sought->xexpr-forest d)
@@ -865,7 +873,7 @@ decision}
         (local [(define toefl (applicant-toefl a))
                 (define kind (hash-ref toefl 'kind))]
           (list*
-           "TOEFL" (date->xexpr (hash-ref toefl 'date))
+           "TOEFL" (string-append (toefl->xexpr kind) " (" (date->xexpr (hash-ref toefl 'date)) ")")
            (match kind
              ['IELTS
               (define read (hash-ref toefl 'read))
