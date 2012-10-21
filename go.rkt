@@ -8,7 +8,7 @@
          (prefix-in 19: srfi/19)
          (planet jaymccarthy/mongodb)
          (planet jaymccarthy/mongodb/dispatch)
-         "id-cookie.rkt"
+         web-server/http/id-cookie
          "model.rkt")
 
 ; View
@@ -989,7 +989,7 @@ decision}
    #:headers
    (list
     (cookie->header
-     logout-id-cookie))))
+     (logout-id-cookie "name")))))
 
 (define (next-app req)
   (redirect-to
@@ -1076,7 +1076,7 @@ decision}
                          (list
                           (cookie->header
                            ; XXX It is a bit wrong to use the name rather than the objectid
-                           (make-id-cookie m8b-key (faculty-name who)))))
+                           (make-id-cookie "name" m8b-key (faculty-name who)))))
             (login req (format "Invalid password for user (~S)" netid))))))
 
 (define (call-with-custodian-shutdown thunk)
@@ -1094,7 +1094,7 @@ decision}
       (λ ()
         (if (top-applies? req)
             (let ()
-              (define maybe-id (request-valid-id-cookie m8b-key req))
+              (define maybe-id (request-id-cookie "name" m8b-key req))
               (match maybe-id
                 [#f
                  (login req)]
