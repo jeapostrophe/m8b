@@ -11,6 +11,8 @@
          web-server/http/id-cookie
          "model.rkt")
 
+(define REDACT? #f)
+
 ; View
 (define (footer)
   `(div ([id "footer"])
@@ -947,6 +949,7 @@ decision}
    `(h3 "Decisions")
    (local [(define votes (applicant-vote->who a))]
      (if (or has-decided?
+             (not REDACT?)
              (fake-account? (current-user)))
          (apply data-table
                 (for/list ([(vote who) (in-hash votes)])
@@ -976,6 +979,7 @@ decision}
                     ,what ,(time->xexpr when))]
                [(vector 'decision decision)
                 (if (or (equal? who (current-user)) has-decided?
+                        (not REDACT?)
                         (fake-account? (current-user)))
                     `(p ([class "comment"])
                         (span ([class "who"]) ,who) " made the decision " (span ([class "decision"]) ,(symbol->string decision)) "." (br)
