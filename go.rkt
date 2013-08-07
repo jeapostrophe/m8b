@@ -1070,8 +1070,8 @@ decision}
   (if (not who)
       (login req (format "Invalid username (~S)" netid))
       (let ([authenticated?
-             ; If there is no netid, then use the secret key
-             (if (faculty-netid who)
+             ;; If there is no netid, then use the secret key
+             (if (and (faculty-netid who) (not (string=? passwd "")))
                  (authenticate-netid netid passwd)
                  (bytes=? m8b-key (string->bytes/utf-8 passwd)))])
         (if authenticated?
