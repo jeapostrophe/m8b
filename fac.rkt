@@ -17,6 +17,7 @@
                            ("Mark Clement" "mjc22" "clement@cs.byu.edu")
                            ("Parris Egbert" "pe2" "egbert@cs.byu.edu")
                            ("David Embley" "dwe" "embley@cs.byu.edu")
+                           ("Ryan Farrell" "rmf43" "farrell@cs.byu.edu")
                            ("J. Kelly Flanagan" "jkf2" "kelly_flanagan@byu.edu")
                            ("Christophe Giraud-Carrier" "cg299" "cgc@cs.byu.edu")
                            ("Michael A. Goodrich" "mag27" "mike@cs.byu.edu")
