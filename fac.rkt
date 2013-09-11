@@ -21,6 +21,7 @@
                            ("J. Kelly Flanagan" "jkf2" "kelly_flanagan@byu.edu")
                            ("Christophe Giraud-Carrier" "cg299" "cgc@cs.byu.edu")
                            ("Michael A. Goodrich" "mag27" "mike@cs.byu.edu")
+                           ("Seth Holladay" "srh43" "seth_holladay@byu.edu")
                            ("Michael Jones" "mdj" "jones@cs.byu.edu")
                            ("Charles Knutson" "cdk23" "knutson@cs.byu.edu")
                            ("Tony Martinez" "trm3" "martinez@cs.byu.edu")
